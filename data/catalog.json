@@ -72,17 +72,17 @@
      "description":"相手バンドの集客力を半減する。相手のターン中、判定前に公開して発動（現在準備中）。"}
   ],
   "incidents": [
-    {"name":"平和な一日","kind":"incident","severity":0,"copies":4},
-    {"name":"軽微な遅刻","kind":"incident","severity":4,"copies":3},
-    {"name":"会計報告ミス","kind":"incident","severity":5,"copies":3},
-    {"name":"終電逃した","kind":"incident","severity":5,"copies":3},
-    {"name":"騒音苦情","kind":"incident","severity":7,"copies":3},
-    {"name":"恋愛のもつれ","kind":"incident","severity":6,"copies":3},
-    {"name":"備品破損","kind":"incident","severity":7,"copies":3},
-    {"name":"機材の借りパク疑惑","kind":"incident","severity":7,"copies":2},
-    {"name":"飲酒トラブル","kind":"incident","severity":8,"copies":2},
-    {"name":"先輩との確執","kind":"incident","severity":8,"copies":2},
-    {"name":"ボヤ騒ぎ","kind":"incident","severity":9,"copies":1},
-    {"name":"SNS炎上","kind":"incident","severity":10,"copies":1}
+    {"name":"いこひろでの日々","kind":"incident","severity":0,"copies":4},
+    {"name":"バンド掛け持ちしすぎ","kind":"incident","severity":5,"copies":3},
+    {"name":"BBQ中止","kind":"incident","severity":6,"copies":3},
+    {"name":"ゼミの選択ミス","kind":"incident","severity":6,"copies":3},
+    {"name":"サークル内恋愛のもつれ","kind":"incident","severity":8,"copies":3},
+    {"name":"必修科目の落単","kind":"incident","severity":7,"copies":3},
+    {"name":"アンプ破壊","kind":"incident","severity":9,"copies":3},
+    {"name":"学生課からの呼び出し","kind":"incident","severity":9,"copies":2},
+    {"name":"スタジオ練バックレ","kind":"incident","severity":9,"copies":2},
+    {"name":"留年","kind":"incident","severity":10,"copies":2},
+    {"name":"冬合宿での悲劇","kind":"incident","severity":11,"copies":1},
+    {"name":"学生証没収","kind":"incident","severity":12,"copies":1}
   ]
 }
