@@ -1,7 +1,7 @@
 {
-  "name": "学生課送り",
-  "short_name": "学生課送り",
-  "description": "身内カードゲーム「学生課送り」",
+  "name": "ほーろっくよーがっく2026（目指せ最高のライブ）",
+  "short_name": "ほーろっく2026",
+  "description": "身内カードゲーム「ほーろっくよーがっく2026（目指せ最高のライブ）」",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1a1a2e",

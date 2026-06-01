@@ -1,6 +1,6 @@
 'use strict';
 /**
- * 学生課送り — SPA (M2/M3)
+ * ほーろっくよーがっく2026（目指せ最高のライブ）— SPA (M2/M3)
  *
  * モード:
  *   hotseat : 1台で複数人。手番が変わるたびデバイスを渡す。
@@ -88,7 +88,8 @@ function render() {
 function renderLobby() {
   $('main-content').innerHTML = `
     <div class="lobby-wrap">
-      <h2>🎸 学生課送り</h2>
+      <h2>🎸 ほーろっくよーがっく2026</h2>
+      <div style="font-size:12px;color:var(--muted);margin-top:-8px;margin-bottom:4px">目指せ最高のライブ</div>
       <div class="card-section">
         <h3>🎮 このデバイスで全員プレイ（ホットシート）</h3>
         <p style="color:var(--muted);font-size:12px">1台を順番に回して遊びます。</p>
