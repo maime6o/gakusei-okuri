@@ -1091,7 +1091,9 @@ function onStateUpdate(gs) {
   }
 
   // ライブ結果（構造化）を検出 → 演出開始
-  if (prevGs && gs.last_live_results?.length > 0) {
+  // prevGs にすでに結果があるケース（reconnectWs後の再送など）は再発火しない
+  const prevHadResults = prevGs?.last_live_results?.length > 0;
+  if (prevGs && !prevHadResults && gs.last_live_results?.length > 0) {
     if (startLivePresentation(prevGs, gs)) {
       render();
       return;
