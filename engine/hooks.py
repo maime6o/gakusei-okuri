@@ -159,6 +159,11 @@ def apply_on_judgment(
     mods.human_delta += deltas.get("human", 0)
     mods.severity_delta += deltas.get("severity", 0)
 
+    if deltas.get("human", 0) != 0:
+        events.append(f"{member.name}の「{ab.name}」: 判定時対応力{deltas['human']:+d}")
+    if deltas.get("severity", 0) != 0:
+        events.append(f"{member.name}の「{ab.name}」: 判定時事件性{deltas['severity']:+d}")
+
     # success bonuses
     if "success_draw+" in effect:
         once = effect.endswith("_once")
@@ -174,10 +179,6 @@ def apply_on_judgment(
         n_str = effect.split("success_music+")[1].split("_")[0]
         mods.success_music_bonus += int(n_str)
         events.append(f"{member.name}の「{ab.name}」: ライブ成功時に音楽性+{n_str}")
-
-    # severity+N for「炎上系シンガー」- always apply (not success-conditional)
-    if "severity+" in effect and "success" not in effect:
-        events.append(f"{member.name}の「{ab.name}」: 判定時severity+{deltas.get('severity',0)}")
 
     return events
 

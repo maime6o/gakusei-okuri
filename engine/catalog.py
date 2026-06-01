@@ -50,4 +50,5 @@ def instance_from_catalog(card: CatalogCard) -> CardInstance:
         phase=card.phase,
         effect=card.effect,
         severity=card.severity,
+        description=card.description,
     )

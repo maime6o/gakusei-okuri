@@ -45,6 +45,7 @@ class CatalogCard(BaseModel):
     phase: Optional[str] = None
     effect: Optional[str] = None
     severity: Optional[int] = None
+    description: Optional[str] = None
     copies: int = 1
     weight: float = 1.0
 
@@ -88,6 +89,7 @@ class CardInstance(BaseModel):
     phase: Optional[str] = None
     effect: Optional[str] = None
     severity: Optional[int] = None
+    description: Optional[str] = None
     face_down: bool = False
     used_once: bool = False
 

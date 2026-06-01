@@ -704,14 +704,15 @@ function showCardDetail(ev, instanceId) {
     if (c.severity != null) {
       return `<div style="color:var(--danger)">事件性&nbsp;<b>${c.severity}</b></div>`;
     }
-    if (c.effect) {
-      return `<div style="color:var(--muted);font-size:12px">効果: ${esc(c.effect)}</div>`;
+    const descText = c.description || c.effect || '';
+    if (descText) {
+      return `<div style="color:var(--muted);font-size:12px">${esc(descText)}</div>`;
     }
     return '';
   })();
 
   const abilHtml = (() => {
-    if (!c.ability) return '<div style="color:var(--muted);font-size:12px">能力なし</div>';
+    if (!c.ability) return c.kind === 'member' ? '<div style="color:var(--muted);font-size:12px">能力なし</div>' : '';
     const impl = isAbilityImpl(c.ability);
     return `<div class="cdd-ability">
       <div class="cdd-ability-name">【${esc(c.ability.name)}】</div>
@@ -765,7 +766,10 @@ function onCardEnter(ev, instanceId) {
       : c.severity != null ? `事件性: ${c.severity}` : '';
 
     const abilLine = (() => {
-      if (!c.ability) return '能力なし';
+      if (!c.ability) {
+        if (c.kind === 'member') return '能力なし';
+        return esc(c.description || c.effect || '');
+      }
       const impl = isAbilityImpl(c.ability);
       return `<span style="color:var(--accent)">${esc(c.ability.name)}</span>: ${esc(c.ability.effect)}`
         + (!impl ? '&nbsp;<span style="color:var(--warn)">⚠未対応</span>' : '');

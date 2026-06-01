@@ -60,6 +60,7 @@ class TestDeckBuilder:
     def test_fixed_deck_50_cards(self):
         builder = FixedDeckBuilder()
         deck = builder.build_player_deck(seed=0)
+        # 38 members + 8 supports + 4 antis = 50
         assert len(deck) == 50, f"Expected 50 cards, got {len(deck)}"
 
     def test_fixed_deck_has_members(self):
@@ -464,13 +465,131 @@ class TestJudgmentBoundary:
 # ---------------------------------------------------------------------------
 
 class TestMemberRoster:
-    def test_all_members_have_no_ability(self):
-        """全18メンバーが ability=null であること"""
+    def test_member_count(self):
+        """全メンバー種類: 基本18 + バリエーション6 = 24種"""
         from engine.catalog import all_members
-        members = all_members()
-        assert len(members) == 18
-        for m in members:
-            assert m.ability is None, f"{m.name} has ability={m.ability}"
+        assert len(all_members()) == 24
+
+    def test_ability_members_have_abilities(self):
+        """能力付与8名 + バリエーション6名は ability != None"""
+        from engine.catalog import all_members
+        ability_ids = {4, 5, 10, 11, 12, 14, 17, 18, 19, 20, 21, 22, 23, 24}
+        for m in all_members():
+            if m.id in ability_ids:
+                assert m.ability is not None, f"{m.name}(id={m.id}) has no ability"
+
+    def test_no_ability_members(self):
+        """能力なし10名は ability=None"""
+        from engine.catalog import all_members
+        no_ability_ids = {1, 2, 3, 6, 7, 8, 9, 13, 15, 16}
+        for m in all_members():
+            if m.id in no_ability_ids:
+                assert m.ability is None, f"{m.name}(id={m.id}) should have no ability"
+
+
+# ---------------------------------------------------------------------------
+# New ability tests
+# ---------------------------------------------------------------------------
+
+class TestNewAbilities:
+    def _inst(self, member_id: int):
+        from engine.catalog import all_members, instance_from_catalog
+        card = next(c for c in all_members() if c.id == member_id)
+        return instance_from_catalog(card)
+
+    # --- static (on_band_stat) ---
+
+    def test_tatsube_drunk_draw_boost_and_human_penalty(self):
+        """id=19 たつぼー（酔いつぶれる）: draw+4 human-2"""
+        from engine import hooks
+        inst = self._inst(19)
+        d, m, h = hooks.apply_on_band_stat(inst, 5, 5, 5)
+        assert d == 9
+        assert h == 3
+
+    def test_wano_matsuri_draw_boost(self):
+        """id=12 わの祭り: draw+3"""
+        from engine import hooks
+        inst = self._inst(12)
+        d, m, h = hooks.apply_on_band_stat(inst, 5, 5, 5)
+        assert d == 8
+
+    def test_ichiro_draw_and_music_boost(self):
+        """id=11 Ichiro Yamaguchi: draw+2_music+1"""
+        from engine import hooks
+        inst = self._inst(11)
+        d, m, h = hooks.apply_on_band_stat(inst, 5, 5, 5)
+        assert d == 7
+        assert m == 6
+
+    def test_sama_d_hangover_music_boost(self):
+        """id=23 さまD（二日酔い）: music+5"""
+        from engine import hooks
+        inst = self._inst(23)
+        d, m, h = hooks.apply_on_band_stat(inst, 5, 5, 5)
+        assert m == 10
+
+    # --- judgment ---
+
+    def test_tatsube_angry_severity_and_success_bonus(self):
+        """id=20 たつぼー（怒れる）: severity+3_success_draw+6"""
+        from engine import hooks
+        inst = self._inst(20)
+        mods = hooks.JudgmentMods()
+        ev = hooks.apply_on_judgment(inst, mods)
+        assert mods.severity_delta == 3
+        assert mods.success_draw_bonus == 6
+        assert any("事件性+3" in e for e in ev)
+
+    def test_sama_d_legendary_dual_bonus(self):
+        """id=22 さまD（神回）: success_draw+6_success_music+3"""
+        from engine import hooks
+        inst = self._inst(22)
+        mods = hooks.JudgmentMods()
+        hooks.apply_on_judgment(inst, mods)
+        assert mods.success_draw_bonus == 6
+        assert mods.success_music_bonus == 3
+
+    def test_goto_judgment_human_delta(self):
+        """id=14 ごとぅさん: human+2 in judgment"""
+        from engine import hooks
+        inst = self._inst(14)
+        mods = hooks.JudgmentMods()
+        ev = hooks.apply_on_judgment(inst, mods)
+        assert mods.human_delta == 2
+        assert any("対応力+2" in e for e in ev)
+
+    # --- on_form ---
+
+    def test_shimachan_on_form_gives_action(self):
+        """id=4 しまちゃん: action+1 on band formation"""
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
+        inst = self._inst(4)
+        _inject_members(alice, count=2, draw=3, music=2, human=2)
+        alice.field_members.append(inst)
+        initial_actions = state.actions_remaining
+        ids = [m.instance_id for m in alice.field_members]
+        state, events = apply_action(state, alice.player_id, FormBandAction(member_instance_ids=ids))
+        # cost=1 action, ability adds +1 → net unchanged
+        assert state.actions_remaining == initial_actions
+        assert any("まとめ役" in e for e in events)
+
+    # --- on_play ---
+
+    def test_jamu_on_play_draws_extra_card(self):
+        """id=5 じゃむさん: draw_card on play"""
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
+        inst = self._inst(5)
+        alice.hand.append(inst)
+        hand_before = len(alice.hand)
+        state, events = apply_action(state, alice.player_id, PlayMemberAction(card_instance_id=inst.instance_id))
+        # played 1 card out, drew 1 back → net 0
+        assert len(state.players[0].hand) == hand_before - 1 + 1
+        assert any("即興演奏" in e for e in events)
 
 
 # ---------------------------------------------------------------------------
