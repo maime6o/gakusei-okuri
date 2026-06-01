@@ -481,7 +481,7 @@ function renderGame() {
             <div class="band-stats">
               <span style="color:#64b5f6">集${band.live_draw || rawDraw}</span>
               <span style="color:#ba68c8">音${band.live_music || rawMus}</span>
-              <span style="color:#ef9a9a">人${band.live_human || rawHum}</span>
+              <span style="color:#ef9a9a">応${band.live_human || rawHum}</span>
             </div>
             ${isMyTurn
               ? `<button class="btn btn-sm btn-secondary"
@@ -530,7 +530,7 @@ function renderGame() {
                   ${ms.map(m=>esc(m.name)).join(' / ')}
                   — 集${b.live_draw||ms.reduce((s,m)=>s+m.draw,0)}
                     音${b.live_music||ms.reduce((s,m)=>s+m.music,0)}
-                    人${b.live_human||ms.reduce((s,m)=>s+m.human,0)}
+                    応${b.live_human||ms.reduce((s,m)=>s+m.human,0)}
                 </div>
               </div>`;
             }).join('')}
@@ -627,7 +627,7 @@ function cardInner(c) {
       ${c.kind === 'member'
         ? `<span class="card-stat draw">集${c.draw}</span>
            <span class="card-stat music">音${c.music}</span>
-           <span class="card-stat human">人${c.human}</span>`
+           <span class="card-stat human">応${c.human}</span>`
         : `<span class="card-stat" style="font-size:8px">${esc(c.phase||c.effect||'')}</span>`}
     </div>`;
 }
@@ -698,7 +698,7 @@ function showCardDetail(ev, instanceId) {
       return `<div class="cdd-stats">
         <span style="color:#64b5f6">集客&nbsp;<b>${c.draw}</b></span>
         <span style="color:#ba68c8">音楽&nbsp;<b>${c.music}</b></span>
-        <span style="color:#ff6060">人間&nbsp;<b>${c.human}</b></span>
+        <span style="color:#ff6060">対応力&nbsp;<b>${c.human}</b></span>
       </div>`;
     }
     if (c.severity != null) {
@@ -761,7 +761,7 @@ function onCardEnter(ev, instanceId) {
     }
 
     const statsLine = c.kind === 'member'
-      ? `集${c.draw}&nbsp;/&nbsp;音${c.music}&nbsp;/&nbsp;人<span style="color:#ff6060;font-weight:bold">${c.human}</span>`
+      ? `集${c.draw}&nbsp;/&nbsp;音${c.music}&nbsp;/&nbsp;応<span style="color:#ff6060;font-weight:bold">${c.human}</span>`
       : c.severity != null ? `事件性: ${c.severity}` : '';
 
     const abilLine = (() => {
@@ -866,7 +866,7 @@ function lpStep0(res, cur, total) {
         </div>
         <div class="lp-stat">
           <span style="color:#ff6060;font-size:26px;font-weight:bold">${res.human_total}</span>
-          <span>人間</span>
+          <span>対応力</span>
         </div>
       </div>
       ${_lpObserverNote()}
@@ -894,14 +894,11 @@ function lpStep1(res, cur, total) {
       </div>
 
       <div class="lp-section">
-        <div class="lp-section-title">⚖️ 判定値（事件と勝負する値）</div>
+        <div class="lp-section-title">⚖️ 対応力（引いた事件性以上なら成功）</div>
         <div class="lp-jv-formula">
-          人間&nbsp;<b>${res.human_total}</b>
-          &times; 係数&nbsp;<b>${res.multiplier.toFixed(2)}</b>
-          &nbsp;(バンド${res.num_bands}個)
-          &nbsp;=&nbsp;<span class="lp-jv-val">${res.judgment_value}</span>
+          このバンドの対応力合計&nbsp;=&nbsp;<span class="lp-jv-val">${res.judgment_value}</span>
         </div>
-        <div class="lp-hint">引く事件カードの事件性がこの値未満なら成功</div>
+        <div class="lp-hint">事件性 ≤ 対応力 → ライブ成功 / 事件性 ＞ 対応力 → 学生課送り</div>
       </div>
       ${_lpObserverNote()}
     </div>`;
@@ -938,7 +935,7 @@ function lpStep3(res, cur, total) {
   const nextLabel = isLast && !res.success ? '学生課送り指名へ →'
                   : isLast                 ? 'ターン終了'
                   :                          '次のバンドへ →';
-  const cmp = res.judgment_value > res.incident_severity;
+  const cmp = res.judgment_value >= res.incident_severity; // true = success
 
   const resultHtml = res.success
     ? `<div style="color:var(--success);font-size:22px;font-weight:bold;text-align:center;margin:8px 0">
@@ -962,10 +959,10 @@ function lpStep3(res, cur, total) {
       <div class="lp-header"><span class="lp-step-label">ステップ 4/4 — 判定結果</span></div>
       <div class="lp-band-title">🎸 バンド ${cur}/${total}</div>
       <div class="lp-section" style="text-align:center;font-size:15px">
-        判定値&nbsp;<b style="font-size:20px">${res.judgment_value}</b>
-        &nbsp;${cmp ? '&gt;' : '&le;'}&nbsp;
+        対応力&nbsp;<b style="font-size:20px">${res.judgment_value}</b>
+        &nbsp;${cmp ? '&ge;' : '&lt;'}&nbsp;
         事件性&nbsp;<b style="font-size:20px">${res.incident_severity}</b>
-        &nbsp;&nbsp;→&nbsp;&nbsp;<b>${cmp ? '事件' : '成功'}</b>
+        &nbsp;&nbsp;→&nbsp;&nbsp;<b>${cmp ? '成功' : '事件'}</b>
       </div>
       ${resultHtml}
       ${_lpObserverNote()}

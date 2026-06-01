@@ -382,7 +382,7 @@ def _process_one_band(
 
     events.append(
         f"ライブ [{' '.join(m.name for m in members)}] "
-        f"draw={band.live_draw} music={band.live_music} human={band.live_human}"
+        f"draw={band.live_draw} music={band.live_music} 対応力={band.live_human}"
     )
 
     # Incident check
@@ -416,15 +416,15 @@ def _process_one_band(
     effective_human = max(0, band.live_human + mods.human_delta)
     effective_severity = max(0, severity + mods.severity_delta)
     num_bands = len(player.bands)
-    multiplier = 1 + (num_bands - 1) * 0.17
-    judgment_value = round(effective_human * multiplier)
+    multiplier = 1.0  # 乗算廃止、バンドごとの対応力のみで判定
+    judgment_value = effective_human
 
     events.append(
-        f"判定: human({effective_human}) × {multiplier:.2f}(バンド{num_bands}個) "
-        f"= {judgment_value} vs severity={effective_severity}"
+        f"判定: 対応力({judgment_value}) vs 事件性={effective_severity} "
+        f"{'→ 成功' if judgment_value >= effective_severity else '→ 事件発生'}"
     )
 
-    live_success = not (judgment_value > effective_severity)
+    live_success = (judgment_value >= effective_severity)
     raw_draw  = band.live_draw
     raw_music = band.live_music
     mob_gain = (raw_draw  + mods.success_draw_bonus)  if live_success else 0

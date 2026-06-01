@@ -262,13 +262,16 @@ class TestActionPhase:
 
 class TestLivePhase:
     def test_live_success_adds_mobilization(self):
-        """A band with human=0 always passes (0 > severity is false)."""
+        """対応力(12×3=36) >= severity=8 → ライブ成功 → 動員数加算"""
+        from engine.catalog import all_incidents, instance_from_catalog
         state = _game_2p()
         state = _skip_mulligan(state)
         alice = state.players[0]
         state.actions_remaining = 99
 
-        _inject_members(alice, count=3, draw=5, music=2, human=0)
+        _inject_members(alice, count=3, draw=5, music=2, human=12)
+        high = next(c for c in all_incidents() if (c.severity or 0) == 8)
+        state.incident_deck = [instance_from_catalog(high)] * 5
         alice = state.players[0]
         ids = [m.instance_id for m in alice.field_members[:3]]
         state, _ = apply_action(state, alice.player_id, FormBandAction(member_instance_ids=ids))
@@ -281,11 +284,15 @@ class TestLivePhase:
         assert any("ライブ成功" in e for e in events)
 
     def test_live_success_increases_performance_record(self):
+        """対応力(12×3=36) >= severity=8 → 活動実績+1"""
+        from engine.catalog import all_incidents, instance_from_catalog
         state = _game_2p()
         state = _skip_mulligan(state)
         alice = state.players[0]
         state.actions_remaining = 99
-        _inject_members(alice, count=3, draw=3, music=2, human=0)
+        _inject_members(alice, count=3, draw=3, music=2, human=12)
+        high = next(c for c in all_incidents() if (c.severity or 0) == 8)
+        state.incident_deck = [instance_from_catalog(high)] * 5
         alice = state.players[0]
         ids = [m.instance_id for m in alice.field_members[:3]]
         state, _ = apply_action(state, alice.player_id, FormBandAction(member_instance_ids=ids))
@@ -294,18 +301,16 @@ class TestLivePhase:
         assert state.players[0].performance_record == pr_before + 1
 
     def test_incident_triggers_sotai(self):
-        """Force incident: human extremely high so judgment always fails."""
+        """対応力が低い(2×3=6) vs severity=8 → 事件発生 → SOTAI"""
+        from engine.catalog import all_incidents, instance_from_catalog
         state = _game_2p()
         state = _skip_mulligan(state)
         alice = state.players[0]
         state.actions_remaining = 99
 
-        _inject_members(alice, count=3, draw=2, music=2, human=100)
-        # Replace incident deck with a max-severity card
-        from engine.catalog import all_incidents, instance_from_catalog
+        _inject_members(alice, count=3, draw=2, music=2, human=2)
         high = next(c for c in all_incidents() if (c.severity or 0) == 8)
-        inst = instance_from_catalog(high)
-        state.incident_deck = [inst]
+        state.incident_deck = [instance_from_catalog(high)] * 5
 
         alice = state.players[0]
         ids = [m.instance_id for m in alice.field_members[:3]]
@@ -317,15 +322,16 @@ class TestLivePhase:
         assert any("学生課送り" in e for e in events)
 
     def test_sotai_removes_member(self):
+        """SOTAI 指名でバンドからメンバーが除外される"""
+        from engine.catalog import all_incidents, instance_from_catalog
         state = _game_2p()
         state = _skip_mulligan(state)
         alice = state.players[0]
         state.actions_remaining = 99
 
-        _inject_members(alice, count=3, draw=2, music=2, human=100)
-        from engine.catalog import all_incidents, instance_from_catalog
+        _inject_members(alice, count=3, draw=2, music=2, human=2)
         high = next(c for c in all_incidents() if (c.severity or 0) == 8)
-        state.incident_deck = [instance_from_catalog(high)]
+        state.incident_deck = [instance_from_catalog(high)] * 5
 
         alice = state.players[0]
         ids = [m.instance_id for m in alice.field_members[:3]]
@@ -347,23 +353,23 @@ class TestLivePhase:
         assert any("学生課送り" in e for e in events)
 
     def test_no_mobilization_on_incident(self):
+        """事件発生時は動員数が加算されない"""
+        from engine.catalog import all_incidents, instance_from_catalog
         state = _game_2p()
         state = _skip_mulligan(state)
         alice = state.players[0]
         state.actions_remaining = 99
         mob_before = alice.cumulative_mobilization
 
-        _inject_members(alice, count=3, draw=5, music=2, human=100)
-        from engine.catalog import all_incidents, instance_from_catalog
+        _inject_members(alice, count=3, draw=5, music=2, human=2)
         high = next(c for c in all_incidents() if (c.severity or 0) == 8)
-        state.incident_deck = [instance_from_catalog(high)]
+        state.incident_deck = [instance_from_catalog(high)] * 5
 
         alice = state.players[0]
         ids = [m.instance_id for m in alice.field_members[:3]]
         state, _ = apply_action(state, alice.player_id, FormBandAction(member_instance_ids=ids))
         state, _ = apply_action(state, alice.player_id, EndTurnAction())
 
-        # Even after sotai resolution, mobilization should not have increased
         alice_now = state.players[0]
         assert alice_now.cumulative_mobilization == mob_before
 
@@ -374,14 +380,17 @@ class TestLivePhase:
 
 class TestWinCondition:
     def test_win_when_target_reached(self):
+        """対応力(12×3=36) >= severity=8 でライブ成功 → 目標動員数到達 → 勝利"""
+        from engine.catalog import all_incidents, instance_from_catalog
         state = _game_2p(target=80)
         state = _skip_mulligan(state)
         alice = state.players[0]
         state.actions_remaining = 99
 
-        # Artificially set near-win
         alice.cumulative_mobilization = 75
-        _inject_members(alice, count=3, draw=10, music=2, human=0)
+        _inject_members(alice, count=3, draw=10, music=2, human=12)
+        high = next(c for c in all_incidents() if (c.severity or 0) == 8)
+        state.incident_deck = [instance_from_catalog(high)] * 5
         alice = state.players[0]
         ids = [m.instance_id for m in alice.field_members[:3]]
         state, _ = apply_action(state, alice.player_id, FormBandAction(member_instance_ids=ids))
@@ -423,64 +432,45 @@ class TestJudgmentBoundary:
         return state, alice.player_id
 
     def test_exactly_equal_is_success(self):
-        # 3 members × human=2 = band_total=6; 1 band → multiplier=1.0 → value=6; severity=6 → 6>6 False → success
+        # 3 members × human=2 → band 対応力合計=6; severity=6 → 6>=6 → success
         state, pid = self._setup_with_human(human=2, severity=6, num_bands=1)
         state, events = apply_action(state, pid, EndTurnAction())
         assert any("成功" in e for e in events)
 
-    def test_one_over_is_incident(self):
-        # 3 members × human=5 = 15; bands=1 → multiplier=1.0 → value=15; severity=4 → 15 > 4 → incident
-        state, pid = self._setup_with_human(human=5, severity=4, num_bands=1)
+    def test_one_below_is_incident(self):
+        # 3 members × human=2 → band 対応力合計=6; severity=7 → 6<7 → incident
+        state, pid = self._setup_with_human(human=2, severity=7, num_bands=1)
         state, events = apply_action(state, pid, EndTurnAction())
         assert state.phase == Phase.SOTAI or any("事件" in e for e in events)
 
-    def test_zero_human_always_success(self):
-        state, pid = self._setup_with_human(human=0, severity=0, num_bands=1)
+    def test_zero_human_fails_positive_severity(self):
+        # 対応力=0 は severity>0 の事件を乗り越えられない
+        state, pid = self._setup_with_human(human=0, severity=4, num_bands=1)
         state, events = apply_action(state, pid, EndTurnAction())
-        assert any("成功" in e for e in events)
-
-    def test_multi_band_multiplies_judgment(self):
-        # 3 members × human=2 = 6; bands=3 → multiplier=2.0 → value=12; severity=4 → 12 > 4 → incident
-        state, pid = self._setup_with_human(human=2, severity=4, num_bands=3)
-        state, events = apply_action(state, pid, EndTurnAction())
-        # Should be SOTAI or incident event
         assert state.phase == Phase.SOTAI or any("事件" in e for e in events)
 
+    def test_multi_band_no_multiplier(self):
+        # バンド2個でも乗算なし：各バンドの対応力のみで個別に判定する
+        # 3 members × human=2 → 対応力=6; severity=5 → 6>=5 → 各バンド成功
+        # 旧式なら 2バンド multiplier=1.17 → jv=7 > 5 で失敗していた
+        state, pid = self._setup_with_human(human=2, severity=5, num_bands=2)
+        state, events = apply_action(state, pid, EndTurnAction())
+        assert state.phase != Phase.SOTAI
+        assert not any("学生課送り" in e for e in events)
+
 
 # ---------------------------------------------------------------------------
-# Static ability hooks
+# Member roster
 # ---------------------------------------------------------------------------
 
-class TestStaticAbilities:
-    def test_mood_maker_reduces_human(self):
-        """id=12 ムードメーカー: human-1 on_band_stat"""
-        from engine.catalog import all_members, instance_from_catalog
-        mood = next(c for c in all_members() if c.id == 12)
-        inst = instance_from_catalog(mood)
-        d, m, h = 5, 5, 5
-        d2, m2, h2 = _apply_static(inst, d, m, h)
-        assert h2 == h - 1
-
-    def test_charisma_ob_increases_draw(self):
-        """id=1 カリスマOB先輩: draw+2 on_band_stat"""
-        from engine.catalog import all_members, instance_from_catalog
-        from engine import hooks
-        card = next(c for c in all_members() if c.id == 1)
-        inst = instance_from_catalog(card)
-        d, m, h = 5, 5, 5
-        d2, m2, h2 = hooks.apply_on_band_stat(inst, d, m, h)
-        assert d2 == d + 2
-
-    def test_technical_drummer_increases_music_and_human(self):
-        """id=4 テクニカル神ドラマー: music+3 human+1"""
-        from engine.catalog import all_members, instance_from_catalog
-        from engine import hooks
-        card = next(c for c in all_members() if c.id == 4)
-        inst = instance_from_catalog(card)
-        d, m, h = 5, 5, 5
-        d2, m2, h2 = hooks.apply_on_band_stat(inst, d, m, h)
-        assert m2 == m + 3
-        assert h2 == h + 1
+class TestMemberRoster:
+    def test_all_members_have_no_ability(self):
+        """全18メンバーが ability=null であること"""
+        from engine.catalog import all_members
+        members = all_members()
+        assert len(members) == 18
+        for m in members:
+            assert m.ability is None, f"{m.name} has ability={m.ability}"
 
 
 # ---------------------------------------------------------------------------
@@ -515,10 +505,10 @@ class TestPerformanceRecord:
         state = _game_2p()
         state = _skip_mulligan(state)
         alice = state.players[0]
-        alice.performance_record = 7
+        alice.performance_record = 6
         from engine.catalog import all_members, instance_from_catalog
-        card7 = next(c for c in all_members() if c.music == 7)
-        inst = instance_from_catalog(card7)
+        card6 = next(c for c in all_members() if c.music == 6)
+        inst = instance_from_catalog(card6)
         alice.hand.append(inst)
         state, _ = apply_action(state, alice.player_id, PlayMemberAction(card_instance_id=inst.instance_id))
         assert any(m.instance_id == inst.instance_id for m in state.players[0].field_members)
@@ -530,12 +520,16 @@ class TestPerformanceRecord:
 
 class TestLiveBandResult:
     def test_success_result_has_correct_fields(self):
-        """EndTurn populates last_live_results with a valid LiveBandResult on success."""
+        """EndTurn populates last_live_results with a valid LiveBandResult on success.
+        対応力(human=12×3=36) >= severity=8 → 成功"""
+        from engine.catalog import all_incidents, instance_from_catalog
         state = _game_2p()
         state = _skip_mulligan(state)
         alice = state.players[0]
         state.actions_remaining = 99
-        _inject_members(alice, count=3, draw=5, music=2, human=0)
+        _inject_members(alice, count=3, draw=5, music=2, human=12)
+        high = next(c for c in all_incidents() if (c.severity or 0) == 8)
+        state.incident_deck = [instance_from_catalog(high)] * 5
         alice = state.players[0]
         ids = [m.instance_id for m in alice.field_members[:3]]
         state, _ = apply_action(state, alice.player_id, FormBandAction(member_instance_ids=ids))
@@ -546,20 +540,22 @@ class TestLiveBandResult:
         assert r.success is True
         assert r.num_bands == 1
         assert abs(r.multiplier - 1.0) < 1e-9
-        assert r.human_total == 0
-        assert r.judgment_value == 0
+        assert r.human_total == 36           # 3 members × human=12
+        assert r.judgment_value == 36        # no multiplier
+        assert r.judgment_value >= r.incident_severity
         assert r.mobilization_gain == r.draw_total
         assert len(r.members) == 3
         assert all(m.kind == "member" for m in r.members)
 
     def test_incident_result_has_correct_fields(self):
-        """EndTurn populates last_live_results with success=False on incident."""
+        """EndTurn populates last_live_results with success=False on incident.
+        対応力(human=2×3=6) < severity=8 → 失敗"""
+        from engine.catalog import all_incidents, instance_from_catalog
         state = _game_2p()
         state = _skip_mulligan(state)
         alice = state.players[0]
         state.actions_remaining = 99
-        _inject_members(alice, count=3, draw=2, music=2, human=100)
-        from engine.catalog import all_incidents, instance_from_catalog
+        _inject_members(alice, count=3, draw=2, music=2, human=2)
         high = next(c for c in all_incidents() if (c.severity or 0) == 8)
         state.incident_deck = [instance_from_catalog(high)] * 5
         alice = state.players[0]
@@ -573,7 +569,8 @@ class TestLiveBandResult:
         assert r.mobilization_gain == 0
         assert r.music_gain == 0
         assert r.incident_severity == 8
-        assert r.judgment_value > r.incident_severity
+        assert r.judgment_value == 6         # 3 × human=2
+        assert r.judgment_value < r.incident_severity
 
     def test_two_band_failures_require_two_sequential_sotai(self):
         """
@@ -589,9 +586,9 @@ class TestLiveBandResult:
         alice = state.players[0]
         state.actions_remaining = 99
 
-        # First 6 field members: high human → failure; last 3: zero human → success
-        _inject_members(alice, count=6, draw=2, music=2, human=100)
-        _inject_members(alice, count=3, draw=2, music=2, human=0)
+        # First 6 field members: low 対応力 → failure vs severity=8; last 3: high 対応力 → success
+        _inject_members(alice, count=6, draw=2, music=2, human=2)   # 3×2=6 < 8 → fail
+        _inject_members(alice, count=3, draw=2, music=2, human=10)  # 3×10=30 >= 8 → success
 
         high = next(c for c in all_incidents() if (c.severity or 0) == 8)
         state.incident_deck = [instance_from_catalog(high)] * 5
@@ -653,11 +650,6 @@ class TestLiveBandResult:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-def _apply_static(member: CardInstance, draw: int, music: int, human: int):
-    from engine import hooks
-    return hooks.apply_on_band_stat(member, draw, music, human)
-
 
 def _inject_members(
     player,
