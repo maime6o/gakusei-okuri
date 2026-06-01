@@ -678,6 +678,20 @@ function revealAnti(instanceId) {
 
 // ── カード詳細モーダル ──────────────────────────────────────────────────────
 
+function effectToJa(effect) {
+  if (!effect) return '';
+  return effect
+    .replace(/success_draw([+-]\d+)/g, '成功時: 集客力$1')
+    .replace(/success_music([+-]\d+)/g, '成功時: 音楽性$1')
+    .replace(/draw([+-]\d+)/g, '集客力$1')
+    .replace(/music([+-]\d+)/g, '音楽性$1')
+    .replace(/human([+-]\d+)/g, '対応力$1')
+    .replace(/severity([+-]\d+)/g, '事件性$1')
+    .replace(/action\+1/g, '行動ポイント+1')
+    .replace(/draw_card/g, 'カード1枚ドロー')
+    .replace(/_/g, ' / ');
+}
+
 function isAbilityImpl(ab) {
   if (!ab) return true;
   const key = `${ab.type}:${ab.hook}`;
@@ -717,7 +731,7 @@ function showCardDetail(ev, instanceId) {
     const impl = isAbilityImpl(c.ability);
     return `<div class="cdd-ability">
       <div class="cdd-ability-name">【${esc(c.ability.name)}】</div>
-      <div>${esc(c.ability.effect)}</div>
+      <div>${esc(effectToJa(c.ability.effect))}</div>
       ${!impl ? '<div class="cdd-unimpl">⚠ 現在未対応（M4実装予定）</div>' : ''}
     </div>`;
   })();
@@ -772,7 +786,7 @@ function onCardEnter(ev, instanceId) {
         return esc(c.description || c.effect || '');
       }
       const impl = isAbilityImpl(c.ability);
-      return `<span style="color:var(--accent)">${esc(c.ability.name)}</span>: ${esc(c.ability.effect)}`
+      return `<span style="color:var(--accent)">${esc(c.ability.name)}</span>: ${esc(effectToJa(c.ability.effect))}`
         + (!impl ? '&nbsp;<span style="color:var(--warn)">⚠未対応</span>' : '');
     })();
 

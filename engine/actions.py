@@ -181,7 +181,7 @@ def _handle_draw(
     player = _get_player(s, player_id)
     card = _draw_one(player)
     if card:
-        events.append(f"{player.name}: 1枚ドロー（{card.name}）")
+        events.append(f"{player.name}: 1枚ドロー")
     else:
         events.append(f"{player.name}: デッキ切れ — ドローできません")
     return s, events
@@ -351,8 +351,6 @@ def _process_live_phase(
 
     for band in bands_with_live:
         s, events = _process_one_band(s, band.band_id, events)
-        if s.phase == Phase.SOTAI:
-            return s, events
 
         # アンコール: 最初に成功したバンドがもう一度ライブを行う
         player = s.current_player
@@ -362,8 +360,6 @@ def _process_live_phase(
             player.encore_pending = False
             events.append(f"🎵 アンコール発動！{s.last_live_results[-1].band_id[:6]}が再びステージへ！")
             s, events = _process_one_band(s, band.band_id, events)
-            if s.phase == Phase.SOTAI:
-                return s, events
 
     return _end_party(s, events)
 
@@ -398,7 +394,7 @@ def _process_one_band(
 
     events.append(
         f"ライブ [{' '.join(m.name for m in members)}] "
-        f"draw={band.live_draw} music={band.live_music} 対応力={band.live_human}"
+        f"集客力={band.live_draw} 音楽性={band.live_music} 対応力={band.live_human}"
     )
 
     # Incident check
@@ -410,7 +406,7 @@ def _process_one_band(
     else:
         severity = incident.severity or 0
         incident_name = incident.name
-        events.append(f"事件: 「{incident_name}」(severity={severity})")
+        events.append(f"事件: 「{incident_name}」（事件性={severity}）")
 
     # Judgment: collect mods
     mods = hooks.JudgmentMods()
@@ -418,16 +414,18 @@ def _process_one_band(
         ev = hooks.apply_on_judgment(m, mods)
         events.extend(ev)
 
-    # Apply judgment-phase anti effects
+    # Apply judgment-phase anti effects (auto-activate all queued anti cards)
     for opponent in s.players:
         if opponent.player_id == player.player_id:
             continue
-        for anti in opponent.anti_zone:
-            if not anti.face_down and anti.phase == "judgment":
+        for anti in list(opponent.anti_zone):
+            if anti.phase == "judgment":
                 delta = _parse_anti_effect(anti.effect or "")
                 mods.human_delta += delta.get("human", 0)
                 mods.severity_delta += delta.get("severity", 0)
-                events.append(f"アンチ「{anti.name}」発動")
+                events.append(f"{opponent.name}のアンチ「{anti.name}」発動！")
+                opponent.anti_zone.remove(anti)
+                opponent.discard.append(anti)
 
     effective_human = max(0, band.live_human + mods.human_delta)
     effective_severity = max(0, severity + mods.severity_delta - player.pending_severity_reduction)
@@ -480,26 +478,15 @@ def _process_one_band(
         band.live_draw = 0
         band.live_music = 0
 
-        nominator_idx = s.next_player_idx(s.current_player_idx)
-        nominator = s.players[nominator_idx]
+        # Auto-select a random member from the failed band
+        if band.members:
+            target = random.choice(band.members)
+            band.members.remove(target)
+            events.append(f"学生課送り: 「{target.name}」が除外（{incident_name}）")
+            if len(band.members) < 1:
+                if band in player.bands:
+                    player.bands.remove(band)
 
-        s.sotai_context = SotaiContext(
-            victim_player_id=player.player_id,
-            band_id=band_id,
-            nominator_player_id=nominator.player_id,
-            incident_name=incident_name,
-            severity=effective_severity,
-            judgment_value=judgment_value,
-        )
-        s.phase = Phase.SOTAI
-        remaining = [
-            b.band_id for b in player.bands
-            if b.band_id != band_id and not b.did_live_this_turn
-        ]
-        s.pending_band_processes = [
-            PendingProcess(player_id=player.player_id, band_id=bid)
-            for bid in remaining
-        ]
         return s, events
 
     # Live success
@@ -603,18 +590,12 @@ def _end_party(
     s.actions_remaining = 3
     s.phase = Phase.ACTION
 
-    # Apply cannot_play_member from pending anti effects
-    # (「部室の鍵がない」sets this flag; cleared above for the player who just had their turn)
+    # Draw up to 6 cards at turn start
+    to_draw = max(0, 6 - len(next_player.hand))
+    if to_draw:
+        _draw_cards_player(next_player, to_draw)
 
-    # on_turn_start hooks (passive – M4; skip for now with log)
-    for m in next_player.field_members:
-        if m.ability and m.ability.hook == "on_turn_start":
-            import logging
-            logging.getLogger(__name__).info(
-                "未実装アビリティ: %s (%s) [%s]", m.ability.name, m.ability.type, m.name
-            )
-
-    events.append(f"--- {next_player.name} のターン開始 (行動:{s.actions_remaining}) ---")
+    events.append(f"--- {next_player.name} のターン開始 (手札{len(next_player.hand)}枚 / 行動:{s.actions_remaining}) ---")
     return s, events
 
 
@@ -677,12 +658,17 @@ def _apply_live_effects(
     for opponent in s.players:
         if opponent.player_id == player.player_id:
             continue
-        for anti in opponent.anti_zone:
-            if not anti.face_down and anti.phase == "live":
+        for anti in list(opponent.anti_zone):
+            if anti.phase == "live":
                 delta = _parse_anti_effect(anti.effect or "")
                 draw += delta.get("draw", 0)
                 music += delta.get("music", 0)
-                events.append(f"アンチ「{anti.name}」発動: draw{delta.get('draw',0):+d} music{delta.get('music',0):+d}")
+                events.append(
+                    f"{opponent.name}のアンチ「{anti.name}」発動！"
+                    f" 集客力{delta.get('draw', 0):+d} 音楽性{delta.get('music', 0):+d}"
+                )
+                opponent.anti_zone.remove(anti)
+                opponent.discard.append(anti)
     return draw, music, human
 
 

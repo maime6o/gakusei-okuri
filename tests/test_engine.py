@@ -301,8 +301,8 @@ class TestLivePhase:
         state, _ = apply_action(state, state.players[0].player_id, EndTurnAction())
         assert state.players[0].performance_record == pr_before + 1
 
-    def test_incident_triggers_sotai(self):
-        """対応力が低い(2×3=6) vs severity=8 → 事件発生 → SOTAI"""
+    def test_incident_triggers_auto_sotai(self):
+        """対応力が低い(2×3=6) vs severity=8 → 事件発生 → 自動でメンバー除外 → 次プレイヤーへ"""
         from engine.catalog import all_incidents, instance_from_catalog
         state = _game_2p()
         state = _skip_mulligan(state)
@@ -318,12 +318,11 @@ class TestLivePhase:
         state, _ = apply_action(state, alice.player_id, FormBandAction(member_instance_ids=ids))
         state, events = apply_action(state, alice.player_id, EndTurnAction())
 
-        assert state.phase == Phase.SOTAI
-        assert state.sotai_context is not None
+        assert state.phase != Phase.SOTAI
         assert any("学生課送り" in e for e in events)
 
-    def test_sotai_removes_member(self):
-        """SOTAI 指名でバンドからメンバーが除外される"""
+    def test_incident_auto_removes_one_member(self):
+        """事件発生時、自動でバンドからメンバーが1名除外される"""
         from engine.catalog import all_incidents, instance_from_catalog
         state = _game_2p()
         state = _skip_mulligan(state)
@@ -337,20 +336,12 @@ class TestLivePhase:
         alice = state.players[0]
         ids = [m.instance_id for m in alice.field_members[:3]]
         state, _ = apply_action(state, alice.player_id, FormBandAction(member_instance_ids=ids))
-        state, _ = apply_action(state, alice.player_id, EndTurnAction())
+        state, events = apply_action(state, alice.player_id, EndTurnAction())
 
-        assert state.phase == Phase.SOTAI
-        ctx = state.sotai_context
-        band = next(b for b in state.players[0].bands if b.band_id == ctx.band_id)
-        victim_member_id = band.member_ids[0]
-
-        nominator_id = ctx.nominator_player_id
-        state, events = apply_action(
-            state, nominator_id, ChooseSotaiAction(member_instance_id=victim_member_id)
-        )
-        band_after = next((b for b in state.players[0].bands if b.band_id == ctx.band_id), None)
-        if band_after:
-            assert victim_member_id not in band_after.member_ids
+        # バンドが残っていれば2名、消滅していれば0名
+        alice_now = state.players[0]
+        total_band_members = sum(len(b.members) for b in alice_now.bands)
+        assert total_band_members <= 2  # 元3名から1名除外
         assert any("学生課送り" in e for e in events)
 
     def test_no_mobilization_on_incident(self):
@@ -442,13 +433,15 @@ class TestJudgmentBoundary:
         # 3 members × human=2 → band 対応力合計=6; severity=7 → 6<7 → incident
         state, pid = self._setup_with_human(human=2, severity=7, num_bands=1)
         state, events = apply_action(state, pid, EndTurnAction())
-        assert state.phase == Phase.SOTAI or any("事件" in e for e in events)
+        assert any("事件" in e for e in events)
+        assert state.phase != Phase.SOTAI  # auto-resolved
 
     def test_zero_human_fails_positive_severity(self):
         # 対応力=0 は severity>0 の事件を乗り越えられない
         state, pid = self._setup_with_human(human=0, severity=4, num_bands=1)
         state, events = apply_action(state, pid, EndTurnAction())
-        assert state.phase == Phase.SOTAI or any("事件" in e for e in events)
+        assert any("事件" in e for e in events)
+        assert state.phase != Phase.SOTAI  # auto-resolved
 
     def test_multi_band_no_multiplier(self):
         # バンド2個でも乗算なし：各バンドの対応力のみで個別に判定する
@@ -726,13 +719,10 @@ class TestLiveBandResult:
         assert r.judgment_value == 6         # 3 × human=2
         assert r.judgment_value < r.incident_severity
 
-    def test_two_band_failures_require_two_sequential_sotai(self):
+    def test_two_band_failures_auto_remove_two_members(self):
         """
-        3 bands: bands 1+2 fail (human=100), band 3 succeeds (human=0).
-        Asserts that the engine stops at EACH failure and resumes via
-        choose_sotai — i.e., pending_band_processes is the mechanism that
-        guarantees exactly 2 nominations and last_live_results contains only
-        the bands processed in that action (never a mix of fail+pending).
+        3 bands: bands 1+2 fail (human=2), band 3 succeeds (human=10).
+        Auto-sotai removes 1 member from each failing band in a single EndTurn.
         """
         from engine.catalog import all_incidents, instance_from_catalog
         state = _game_2p()
@@ -740,64 +730,35 @@ class TestLiveBandResult:
         alice = state.players[0]
         state.actions_remaining = 99
 
-        # First 6 field members: low 対応力 → failure vs severity=8; last 3: high 対応力 → success
         _inject_members(alice, count=6, draw=2, music=2, human=2)   # 3×2=6 < 8 → fail
         _inject_members(alice, count=3, draw=2, music=2, human=10)  # 3×10=30 >= 8 → success
 
         high = next(c for c in all_incidents() if (c.severity or 0) == 8)
         state.incident_deck = [instance_from_catalog(high)] * 5
 
-        # Form band 1 (high-human members)
         alice = state.players[0]
         ids1 = [m.instance_id for m in alice.field_members[0:3]]
         state, _ = apply_action(state, alice.player_id, FormBandAction(member_instance_ids=ids1))
 
-        # Form band 2 (high-human members)
         alice = state.players[0]
         ids2 = [m.instance_id for m in alice.field_members[0:3]]
         state, _ = apply_action(state, alice.player_id, FormBandAction(member_instance_ids=ids2))
 
-        # Form band 3 (zero-human members)
         alice = state.players[0]
         ids3 = [m.instance_id for m in alice.field_members[0:3]]
         state, _ = apply_action(state, alice.player_id, FormBandAction(member_instance_ids=ids3))
 
-        # EndTurn: band 1 fails → engine stops; bands 2 and 3 become pending
         alice = state.players[0]
-        state, _ = apply_action(state, alice.player_id, EndTurnAction())
+        mob_before = alice.cumulative_mobilization
+        state, events = apply_action(state, alice.player_id, EndTurnAction())
 
-        assert state.phase == Phase.SOTAI, "band 1 failure should trigger SOTAI"
-        assert len(state.last_live_results) == 1, "only band 1 was processed"
-        assert state.last_live_results[0].success is False
-        assert len(state.pending_band_processes) == 2, "bands 2 and 3 are pending"
-
-        # choose_sotai ①: resolves band 1; engine resumes → band 2 also fails
-        ctx = state.sotai_context
-        nominator_id = ctx.nominator_player_id
-        victim = state.player_by_id(ctx.victim_player_id)
-        band = next(b for b in victim.bands if b.band_id == ctx.band_id)
-        state, _ = apply_action(
-            state, nominator_id,
-            ChooseSotaiAction(member_instance_id=band.member_ids[0]),
-        )
-
-        assert state.phase == Phase.SOTAI, "band 2 should also trigger SOTAI"
-        assert len(state.last_live_results) == 1, "only band 2 was processed in this action"
-        assert state.last_live_results[0].success is False
-        assert len(state.pending_band_processes) == 1, "only band 3 remains"
-
-        # choose_sotai ②: resolves band 2; engine resumes → band 3 succeeds → end_party
-        ctx = state.sotai_context
-        victim = state.player_by_id(ctx.victim_player_id)
-        band = next(b for b in victim.bands if b.band_id == ctx.band_id)
-        state, _ = apply_action(
-            state, nominator_id,
-            ChooseSotaiAction(member_instance_id=band.member_ids[0]),
-        )
-
-        assert state.phase != Phase.SOTAI, "all SOTAI should be resolved"
-        assert len(state.last_live_results) == 1, "only band 3 was processed"
-        assert state.last_live_results[0].success is True
+        # Both failures resolved automatically — no SOTAI phase
+        assert state.phase != Phase.SOTAI
+        removal_events = [e for e in events if "が除外" in e]
+        assert len(removal_events) == 2, "1 member removed per failing band"
+        # Successful band 3 contributed mobilization
+        assert state.players[0].cumulative_mobilization > mob_before
+        assert any(r.success for r in state.last_live_results), "band 3 should succeed"
         assert state.pending_band_processes == []
 
 
