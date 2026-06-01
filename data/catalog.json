@@ -83,6 +83,9 @@
     {"name":"スタジオ練バックレ","kind":"incident","severity":9,"copies":2},
     {"name":"留年","kind":"incident","severity":10,"copies":2},
     {"name":"冬合宿での悲劇","kind":"incident","severity":11,"copies":1},
-    {"name":"学生証没収","kind":"incident","severity":12,"copies":1}
+    {"name":"学生証没収","kind":"incident","severity":12,"copies":1},
+    {"name":"OBからの圧力","kind":"incident","severity":13,"copies":1},
+    {"name":"部室没収・活動停止","kind":"incident","severity":15,"copies":1},
+    {"name":"廃部宣告","kind":"incident","severity":20,"copies":1}
   ]
 }
