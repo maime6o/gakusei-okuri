@@ -92,7 +92,7 @@ function renderLobby() {
       <div style="font-size:12px;color:var(--muted);margin-top:-8px;margin-bottom:4px;text-align:center">目指せ最高のライブ</div>
 
       <div class="lobby-title-img-wrap">
-        <img class="lobby-title-img" src="/static/images/title.png" alt=""
+        <img class="lobby-title-img" src="/images/title.png" alt=""
              onerror="this.parentNode.style.display='none'">
       </div>
 
@@ -708,7 +708,7 @@ function revealAnti(instanceId) {
 function memberImagePath(c) {
   if (c.kind !== 'member' || !c.part || !c.gender) return null;
   const partKey = c.part.replace('/', '');
-  return `/static/images/members/${partKey}_${c.gender}.png`;
+  return `/images/members/${partKey}_${c.gender}.png`;
 }
 
 function effectToJa(effect) {

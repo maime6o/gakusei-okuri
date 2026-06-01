@@ -208,11 +208,11 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
 .card.face-down { background: var(--accent2); }
 
 .card-member-img {
-  width: 100%;
-  height: 46px;
+  width: calc(100% + 8px);
+  margin: -4px -4px 4px -4px;
+  height: 58px;
   overflow: hidden;
-  border-radius: 3px;
-  margin-bottom: 3px;
+  border-radius: 6px 6px 0 0;
   background: var(--accent2);
   flex-shrink: 0;
 }
@@ -220,6 +220,7 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: top center;
   display: block;
 }
 .card-name { font-size: 9px; font-weight: bold; line-height: 1.2; }
