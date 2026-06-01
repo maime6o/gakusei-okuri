@@ -38,6 +38,7 @@ class CatalogCard(BaseModel):
     name: str
     kind: CardKind
     part: Optional[str] = None
+    gender: Optional[str] = None
     draw: int = 0
     music: int = 0
     human: int = 0
@@ -82,6 +83,7 @@ class CardInstance(BaseModel):
     kind: CardKind
     name: str
     part: Optional[str] = None
+    gender: Optional[str] = None
     draw: int = 0
     music: int = 0
     human: int = 0

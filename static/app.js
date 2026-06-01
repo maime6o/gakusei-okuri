@@ -89,7 +89,29 @@ function renderLobby() {
   $('main-content').innerHTML = `
     <div class="lobby-wrap">
       <h2>🎸 ほーろっくよーがっく2026</h2>
-      <div style="font-size:12px;color:var(--muted);margin-top:-8px;margin-bottom:4px">目指せ最高のライブ</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:-8px;margin-bottom:4px;text-align:center">目指せ最高のライブ</div>
+
+      <div class="lobby-title-img-wrap">
+        <img class="lobby-title-img" src="/static/images/title.png" alt=""
+             onerror="this.parentNode.style.display='none'">
+      </div>
+
+      <div class="card-section">
+        <h3>📖 説明書</h3>
+        <div class="rulebook">
+          <h4>🏆 勝利条件</h4>
+          目標動員数（デフォルト120）に先に到達したプレイヤーの勝利。
+          <h4>🔄 ターンの流れ</h4>
+          行動ポイント3を使い、ドロー・メンバーをフィールドに出す・バンド結成を行う。ターン終了でライブ判定へ。
+          <h4>🎸 バンド結成</h4>
+          フィールドのメンバー3人以上を選んでバンドを組む。
+          <h4>⚡ ライブ判定</h4>
+          事件カードを1枚引き、バンドの対応力合計 ≥ 事件性なら成功。成功すると動員数・音楽性を獲得。失敗するとメンバー1名が学生課送り。
+          <h4>🃏 サポート / アンチ</h4>
+          サポートカードは自分のターンに使う補助効果。アンチカードは事前にセットしておくと相手のライブ時に自動発動。
+        </div>
+      </div>
+
       <div class="card-section">
         <h3>🎮 このデバイスで全員プレイ（ホットシート）</h3>
         <p style="color:var(--muted);font-size:12px">1台を順番に回して遊びます。</p>
@@ -620,8 +642,13 @@ function cardInner(c) {
     ? `<span class="card-info-btn"
              onclick="event.stopPropagation();showCardDetail(event,'${c.instance_id}')">ℹ</span>`
     : '';
+  const imgSrc = memberImagePath(c);
+  const imgHtml = imgSrc
+    ? `<div class="card-member-img"><img src="${imgSrc}" alt="" loading="lazy" onerror="this.parentNode.style.display='none'"></div>`
+    : '';
   return `
     ${infoBtn}
+    ${imgHtml}
     <div class="card-name">${esc(c.name||'')}</div>
     <div class="card-part">${esc(c.part||c.kind||'')}</div>
     <div class="card-stats">
@@ -677,6 +704,12 @@ function revealAnti(instanceId) {
 }
 
 // ── カード詳細モーダル ──────────────────────────────────────────────────────
+
+function memberImagePath(c) {
+  if (c.kind !== 'member' || !c.part || !c.gender) return null;
+  const partKey = c.part.replace('/', '');
+  return `/static/images/members/${partKey}_${c.gender}.png`;
+}
 
 function effectToJa(effect) {
   if (!effect) return '';

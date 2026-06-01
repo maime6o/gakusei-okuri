@@ -43,6 +43,7 @@ def instance_from_catalog(card: CatalogCard) -> CardInstance:
         kind=card.kind,
         name=card.name,
         part=card.part,
+        gender=card.gender,
         draw=card.draw,
         music=card.music,
         human=card.human,

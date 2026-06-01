@@ -48,6 +48,36 @@ main { flex: 1; padding: 12px; overflow-y: auto; }
 }
 .lobby-wrap h2 { font-size: 22px; text-align: center; }
 
+.lobby-title-img {
+  width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+  border-radius: var(--radius);
+  display: block;
+}
+.lobby-title-img-wrap {
+  width: 100%;
+  background: var(--surface);
+  border-radius: var(--radius);
+  overflow: hidden;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rulebook {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text);
+}
+.rulebook h4 {
+  color: var(--accent);
+  font-size: 13px;
+  margin: 10px 0 4px;
+}
+.rulebook h4:first-child { margin-top: 0; }
+
 .card-section {
   background: var(--surface);
   border-radius: var(--radius);
@@ -177,6 +207,21 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
 .card.disabled { opacity: 0.4; cursor: not-allowed; }
 .card.face-down { background: var(--accent2); }
 
+.card-member-img {
+  width: 100%;
+  height: 46px;
+  overflow: hidden;
+  border-radius: 3px;
+  margin-bottom: 3px;
+  background: var(--accent2);
+  flex-shrink: 0;
+}
+.card-member-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 .card-name { font-size: 9px; font-weight: bold; line-height: 1.2; }
 .card-part { font-size: 9px; color: var(--accent); margin-top: 2px; }
 .card-stats { margin-top: auto; display: flex; gap: 3px; }
