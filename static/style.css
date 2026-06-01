@@ -1,0 +1,496 @@
+:root {
+  --bg: #1a1a2e;
+  --surface: #16213e;
+  --accent: #e94560;
+  --accent2: #0f3460;
+  --text: #eaeaea;
+  --muted: #888;
+  --success: #4caf50;
+  --warn: #ff9800;
+  --danger: #f44336;
+  --radius: 8px;
+  --card-w: 72px;
+  --card-h: 100px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  font-size: 14px;
+}
+
+/* ── Layout ── */
+#app { display: flex; flex-direction: column; min-height: 100dvh; }
+
+header {
+  background: var(--surface);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 2px solid var(--accent);
+}
+header h1 { font-size: 18px; color: var(--accent); }
+
+main { flex: 1; padding: 12px; overflow-y: auto; }
+
+/* ── Lobby ── */
+.lobby-wrap {
+  max-width: 420px;
+  margin: 40px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.lobby-wrap h2 { font-size: 22px; text-align: center; }
+
+.card-section {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.card-section h3 { color: var(--accent); font-size: 15px; }
+
+label { font-size: 13px; color: var(--muted); }
+input, select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--accent2);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+}
+input:focus, select:focus { outline: 2px solid var(--accent); border-color: transparent; }
+
+.btn {
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: opacity 0.15s;
+}
+.btn:active { opacity: 0.7; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-secondary { background: var(--accent2); color: var(--text); }
+.btn-sm { padding: 6px 14px; font-size: 13px; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.room-code {
+  font-size: 28px;
+  font-weight: bold;
+  letter-spacing: 6px;
+  text-align: center;
+  color: var(--accent);
+  padding: 8px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.room-code-hint { font-size: 12px; color: var(--muted); text-align: center; }
+
+.player-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.player-list li {
+  padding: 6px 10px;
+  background: var(--bg);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.badge {
+  font-size: 11px;
+  background: var(--accent2);
+  color: var(--text);
+  padding: 2px 6px;
+  border-radius: 20px;
+}
+
+/* ── Game board ── */
+.board { display: flex; flex-direction: column; gap: 10px; }
+
+.status-bar {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.stat-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 11px;
+  gap: 2px;
+}
+.stat-chip .val { font-size: 16px; font-weight: bold; }
+.stat-chip.accent .val { color: var(--accent); }
+
+.phase-tag {
+  font-size: 12px;
+  background: var(--accent2);
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+.phase-tag.active { background: var(--accent); }
+
+/* Mobilization progress bars */
+.mob-bars { display: flex; flex-direction: column; gap: 6px; }
+.mob-bar-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.mob-bar-row span:first-child { min-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-track { flex: 1; height: 10px; background: var(--accent2); border-radius: 5px; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--accent); border-radius: 5px; transition: width 0.4s; }
+.mob-val { font-weight: bold; min-width: 40px; text-align: right; }
+
+/* Hand & Field */
+.section-title { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.cards-row { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.card {
+  width: var(--card-w);
+  height: var(--card-h);
+  background: var(--surface);
+  border-radius: 6px;
+  border: 1px solid var(--accent2);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  font-size: 10px;
+  transition: transform 0.1s, border-color 0.1s;
+  position: relative;
+  user-select: none;
+}
+.card:active { transform: scale(0.96); }
+.card.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+.card.disabled { opacity: 0.4; cursor: not-allowed; }
+.card.face-down { background: var(--accent2); }
+
+.card-name { font-size: 9px; font-weight: bold; line-height: 1.2; }
+.card-part { font-size: 9px; color: var(--accent); margin-top: 2px; }
+.card-stats { margin-top: auto; display: flex; gap: 3px; }
+.card-stat { font-size: 8px; background: var(--bg); padding: 1px 3px; border-radius: 3px; }
+.card-stat.draw { color: #64b5f6; }
+.card-stat.music { color: #ba68c8; }
+.card-stat.human { color: #ff6060; font-weight: bold; }
+
+/* Bands */
+.bands-section { display: flex; flex-direction: column; gap: 8px; }
+.band-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 10px;
+  border: 1px solid var(--accent2);
+}
+.band-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.band-stats { display: flex; gap: 8px; font-size: 12px; }
+.band-stat { display: flex; gap: 3px; }
+
+/* Actions toolbar */
+.actions-toolbar {
+  position: sticky;
+  bottom: 0;
+  background: var(--surface);
+  border-top: 2px solid var(--accent2);
+  padding: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  z-index: 10;
+}
+
+/* Log */
+.log-panel {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 10px;
+  max-height: 150px;
+  overflow-y: auto;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.log-panel .log-entry { border-bottom: 1px solid var(--accent2); padding: 2px 0; }
+.log-panel .log-entry:last-child { color: var(--text); }
+
+/* Modals */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100;
+}
+.modal {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 20px;
+  max-width: 340px;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.modal h3 { color: var(--accent); }
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent2);
+  color: var(--text);
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 13px;
+  z-index: 200;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.toast.show { opacity: 1; }
+
+/* Error banner */
+.error-banner {
+  background: var(--danger);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  display: none;
+}
+.error-banner.show { display: block; }
+
+/* ── カード詳細UI ── */
+
+.card-info-btn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  background: rgba(15,52,96,0.85);
+  border-radius: 50%;
+  font-size: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text);
+  z-index: 2;
+  line-height: 1;
+  user-select: none;
+}
+.card-info-btn:hover { background: var(--accent); }
+
+.card-hover-panel {
+  position: fixed;
+  display: none;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  max-width: 220px;
+  z-index: 50;
+  pointer-events: none;
+  font-size: 12px;
+  line-height: 1.7;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+}
+
+.cdd-stats {
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+.cdd-ability {
+  background: var(--bg);
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.cdd-ability-name {
+  font-weight: bold;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.cdd-unimpl {
+  color: var(--warn);
+  font-size: 11px;
+  margin-top: 6px;
+}
+
+/* ── M2/M3 追加スタイル ── */
+
+/* 待機バナー（オンライン：相手ターン中） */
+.waiting-banner {
+  background: var(--accent2);
+  color: var(--text);
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+/* 事件・学生課送りバナー */
+.incident-banner {
+  background: var(--danger);
+  color: #fff;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+/* ハンドオフ画面 */
+.lobby-wrap { display: flex; flex-direction: column; gap: 16px; }
+
+/* アクティブプレイヤー名を強調 */
+.active-player {
+  color: var(--accent);
+  font-weight: bold;
+}
+
+/* ── ライブ演出 ── */
+.live-pres {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 8px 4px;
+}
+.lp-header { text-align: center; }
+.lp-step-label {
+  background: var(--accent2);
+  color: var(--text);
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+.lp-band-title {
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+  color: var(--accent);
+}
+.lp-stats {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+.lp-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+.lp-section {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.lp-section-title {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: bold;
+}
+.lp-gain-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 15px;
+}
+.lp-gain { color: var(--success); font-weight: bold; font-size: 18px; }
+.lp-jv-formula {
+  font-size: 16px;
+  text-align: center;
+  line-height: 2;
+}
+.lp-jv-val { color: var(--warn); font-size: 24px; font-weight: bold; }
+.lp-hint { font-size: 12px; color: var(--muted); text-align: center; }
+.lp-observer-note {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+  padding: 6px;
+  border-top: 1px solid var(--accent2);
+}
+
+/* ── 事件カードフリップ（Step 3用） ── */
+.incident-flip {
+  text-align: center;
+  padding: 20px 0;
+}
+.incident-flip .inc-name {
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--warn);
+  text-align: center;
+  line-height: 1.4;
+}
+.incident-flip .inc-sev {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* 3D flip card */
+.flip-card {
+  width: 120px;
+  height: 160px;
+  perspective: 800px;
+  margin: 0 auto;
+}
+.flip-card-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.flip-card-inner.flipped { transform: rotateY(180deg); }
+.flip-card-back,
+.flip-card-front {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+}
+.flip-card-back  { background: var(--accent2); font-size: 56px; }
+.flip-card-front {
+  background: var(--surface);
+  border: 2px solid var(--warn);
+  transform: rotateY(180deg);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  :root { --card-w: 64px; --card-h: 90px; }
+  .lobby-wrap { margin: 16px auto; }
+}
