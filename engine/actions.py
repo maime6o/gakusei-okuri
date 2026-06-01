@@ -97,6 +97,8 @@ def apply_action(
 ) -> tuple[GameState, list[str]]:
     """Return (new_state, events). Never mutates state."""
     s = state.model_copy(deep=True)
+    # Clear stale live results on every action; EndTurnAction/ChooseSotaiAction repopulate.
+    s.last_live_results = []
     events: list[str] = []
 
     if isinstance(action, MulliganAction):

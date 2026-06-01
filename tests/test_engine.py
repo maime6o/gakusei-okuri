@@ -634,6 +634,41 @@ class TestPerformanceRecord:
 
 
 # ---------------------------------------------------------------------------
+# last_live_results stale data bug
+# ---------------------------------------------------------------------------
+
+class TestLiveResultsCleared:
+    def test_last_live_results_cleared_on_next_action(self):
+        """再現テスト: ターン終了後、次プレイヤーのアクションで last_live_results が残っていないこと。
+        (バグ: DrawAction後も前ターンの結果が残り、LP演出が誤発動していた)"""
+        from engine.catalog import all_incidents, instance_from_catalog
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
+
+        # Aliceがバンドを組んでライブ成功
+        state.actions_remaining = 99
+        _inject_members(alice, count=3, draw=3, music=2, human=12)
+        state.incident_deck = [instance_from_catalog(
+            next(c for c in all_incidents() if (c.severity or 0) == 8)
+        )] * 5
+        ids = [m.instance_id for m in alice.field_members[:3]]
+        state, _ = apply_action(state, alice.player_id, FormBandAction(member_instance_ids=ids))
+        state, _ = apply_action(state, alice.player_id, EndTurnAction())
+
+        # ライブ結果が存在することを確認
+        assert len(state.last_live_results) > 0
+
+        # 次のプレイヤー（Bob）がドローする
+        bob = state.players[1]
+        state, _ = apply_action(state, bob.player_id, DrawAction())
+
+        # BobのDrawAction後は last_live_results が空でなければならない
+        assert state.last_live_results == [], \
+            f"DrawAction後も last_live_results が残っている: {state.last_live_results}"
+
+
+# ---------------------------------------------------------------------------
 # LiveBandResult structure
 # ---------------------------------------------------------------------------
 
