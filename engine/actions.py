@@ -202,7 +202,11 @@ def _handle_play_member(
             f"活動実績（{player.performance_record}）不足: {card.name}はmusic={card.music}が必要"
         )
 
-    _cost_action(s, 1)
+    if player.free_member_play:
+        player.free_member_play = False
+        events.append("助っ人ヘルプ発動: コスト0でプレイ")
+    else:
+        _cost_action(s, 1)
     player.hand.remove(card)
     player.field_members.append(card)
 
@@ -348,8 +352,18 @@ def _process_live_phase(
     for band in bands_with_live:
         s, events = _process_one_band(s, band.band_id, events)
         if s.phase == Phase.SOTAI:
-            # Pause here; processing resumes after ChooseSotai
             return s, events
+
+        # アンコール: 最初に成功したバンドがもう一度ライブを行う
+        player = s.current_player
+        if (player.encore_pending
+                and s.last_live_results
+                and s.last_live_results[-1].success):
+            player.encore_pending = False
+            events.append(f"🎵 アンコール発動！{s.last_live_results[-1].band_id[:6]}が再びステージへ！")
+            s, events = _process_one_band(s, band.band_id, events)
+            if s.phase == Phase.SOTAI:
+                return s, events
 
     return _end_party(s, events)
 
@@ -416,7 +430,9 @@ def _process_one_band(
                 events.append(f"アンチ「{anti.name}」発動")
 
     effective_human = max(0, band.live_human + mods.human_delta)
-    effective_severity = max(0, severity + mods.severity_delta)
+    effective_severity = max(0, severity + mods.severity_delta - player.pending_severity_reduction)
+    if player.pending_severity_reduction > 0:
+        events.append(f"顧問の口添え: 事件性-{player.pending_severity_reduction}")
     num_bands = len(player.bands)
     multiplier = 1.0  # 乗算廃止、バンドごとの対応力のみで判定
     judgment_value = effective_human
@@ -568,8 +584,13 @@ def _end_party(
             events.append(f"🎉 {p.name} が目標動員数 {s.target_mobilization} に到達！勝利！")
             return s, events
 
-    # Reset per-turn band flags and cannot_play_member
+    # Reset per-turn flags
     player.cannot_play_member = False
+    player.free_member_play = False
+    player.pending_live_draw_bonus = 0
+    player.pending_live_music_bonus = 0
+    player.pending_severity_reduction = 0
+    player.encore_pending = False
     for band in player.bands:
         band.did_live_this_turn = False
         band.live_draw = 0
@@ -616,9 +637,23 @@ def _apply_support_effect_action(
         _draw_cards_player(player, count)
         events.append(f"「{card.name}」: 手札{count}枚を引き直し")
     elif effect == "free_play_member":
-        # TODO: implement free play member (next action doesn't consume an action point)
-        # For now, just log
-        events.append(f"「{card.name}」: 次にメンバーを出す時コスト0（未実装・スキップ）")
+        player.free_member_play = True
+        events.append(f"「{card.name}」: 次のメンバーをコスト0でプレイ可能")
+    elif effect == "music+3":
+        player.pending_live_music_bonus += 3
+        events.append(f"「{card.name}」: このターン音楽性+3")
+    elif effect == "draw+3":
+        player.pending_live_draw_bonus += 3
+        events.append(f"「{card.name}」: このターン集客力+3")
+    elif effect == "draw+2":
+        player.pending_live_draw_bonus += 2
+        events.append(f"「{card.name}」: このターン集客力+2")
+    elif effect == "severity-2":
+        player.pending_severity_reduction += 2
+        events.append(f"「{card.name}」: このターン事件性-2")
+    elif effect == "encore":
+        player.encore_pending = True
+        events.append(f"「{card.name}」: 最初に成功したバンドがアンコールで追加ライブ！")
     return events
 
 
@@ -632,7 +667,13 @@ def _apply_live_effects(
     draw: int, music: int, human: int,
     events: list[str],
 ) -> tuple[int, int, int]:
-    """Apply revealed anti cards' live-phase effects to band stats."""
+    """Apply support pending bonuses and revealed anti effects to band stats."""
+    if player.pending_live_draw_bonus:
+        draw += player.pending_live_draw_bonus
+        events.append(f"サポート: 集客力+{player.pending_live_draw_bonus}")
+    if player.pending_live_music_bonus:
+        music += player.pending_live_music_bonus
+        events.append(f"サポート: 音楽性+{player.pending_live_music_bonus}")
     for opponent in s.players:
         if opponent.player_id == player.player_id:
             continue

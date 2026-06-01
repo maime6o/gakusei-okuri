@@ -9,7 +9,7 @@ from engine.game import create_game, GameConfig
 from engine.actions import (
     apply_action, ActionError,
     MulliganAction, DrawAction, PlayMemberAction, FormBandAction,
-    EndTurnAction, ChooseSotaiAction, DisbandAction,
+    EndTurnAction, ChooseSotaiAction, DisbandAction, UseSupportAction,
 )
 from engine.models import Phase, CardKind, CardInstance
 from engine.deck_builder import FixedDeckBuilder
@@ -825,3 +825,175 @@ def _inject_members(
             human=human,
         )
         player.field_members.append(inst)
+
+
+def _inject_support(player, name: str, effect: str) -> "CardInstance":
+    """Inject a synthetic support card into the player's hand and return it."""
+    from engine.models import CardInstance, CardKind
+    card = CardInstance(
+        catalog_id=f"test_support_{name}",
+        kind=CardKind.SUPPORT,
+        name=name,
+        effect=effect,
+        phase="action",
+    )
+    player.hand.append(card)
+    return card
+
+
+# ---------------------------------------------------------------------------
+# Support card effects
+# ---------------------------------------------------------------------------
+
+class TestSupportEffects:
+    def test_draw2_adds_two_cards(self):
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
+        card = _inject_support(alice, "差し入れ", "draw2")
+        before = len(alice.hand)
+        state, events = apply_action(state, alice.player_id,
+                                     UseSupportAction(card_instance_id=card.instance_id))
+        assert len(state.players[0].hand) == before - 1 + 2  # used 1, drew 2
+
+    def test_redraw_hand_replaces_hand(self):
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
+        card = _inject_support(alice, "打ち上げで結束", "redraw_hand")
+        before = len(alice.hand)  # includes the support card
+        state, events = apply_action(state, alice.player_id,
+                                     UseSupportAction(card_instance_id=card.instance_id))
+        # used card leaves hand (goes to discard), then (before-1) cards were discarded
+        # and (before-1) new cards drawn — net hand size equals before-1
+        assert len(state.players[0].hand) == before - 1
+
+    def test_free_play_member_sets_flag(self):
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
+        card = _inject_support(alice, "助っ人ヘルプ", "free_play_member")
+        state, _ = apply_action(state, alice.player_id,
+                                UseSupportAction(card_instance_id=card.instance_id))
+        assert state.players[0].free_member_play is True
+
+    def test_free_play_member_does_not_cost_action(self):
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
+        support = _inject_support(alice, "助っ人ヘルプ", "free_play_member")
+        # use the support (costs 1 action)
+        state, _ = apply_action(state, alice.player_id,
+                                UseSupportAction(card_instance_id=support.instance_id))
+        actions_after_support = state.actions_remaining
+        # find a playable member
+        member = _find_member_in_hand(state.players[0])
+        if member is None:
+            _inject_members(state.players[0], count=1, music=1)
+            member = state.players[0].field_members[-1]
+            state.players[0].field_members.pop()
+            state.players[0].hand.append(member)
+            member = state.players[0].hand[-1]
+        state, _ = apply_action(state, alice.player_id,
+                                PlayMemberAction(card_instance_id=member.instance_id))
+        # action count should be unchanged (free play consumed the flag, not an action)
+        assert state.actions_remaining == actions_after_support
+        assert state.players[0].free_member_play is False
+
+    def test_music_bonus_sets_pending_flag(self):
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
+        card = _inject_support(alice, "練習スタジオ確保", "music+3")
+        state, _ = apply_action(state, alice.player_id,
+                                UseSupportAction(card_instance_id=card.instance_id))
+        assert state.players[0].pending_live_music_bonus == 3
+
+    def test_draw_bonus_3_sets_pending_flag(self):
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
+        card = _inject_support(alice, "ビラ配り", "draw+3")
+        state, _ = apply_action(state, alice.player_id,
+                                UseSupportAction(card_instance_id=card.instance_id))
+        assert state.players[0].pending_live_draw_bonus == 3
+
+    def test_draw_bonus_2_sets_pending_flag(self):
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
+        card = _inject_support(alice, "機材車", "draw+2")
+        state, _ = apply_action(state, alice.player_id,
+                                UseSupportAction(card_instance_id=card.instance_id))
+        assert state.players[0].pending_live_draw_bonus == 2
+
+    def test_severity_reduction_sets_pending_flag(self):
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
+        card = _inject_support(alice, "顧問の口添え", "severity-2")
+        state, _ = apply_action(state, alice.player_id,
+                                UseSupportAction(card_instance_id=card.instance_id))
+        assert state.players[0].pending_severity_reduction == 2
+
+    def test_encore_sets_pending_flag(self):
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
+        card = _inject_support(alice, "アンコール", "encore")
+        state, _ = apply_action(state, alice.player_id,
+                                UseSupportAction(card_instance_id=card.instance_id))
+        assert state.players[0].encore_pending is True
+
+    def test_pending_flags_cleared_after_turn(self):
+        """All pending bonuses reset to zero when the turn ends."""
+        from engine.catalog import all_incidents, instance_from_catalog
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
+
+        state.actions_remaining = 99
+        _inject_support(alice, "練習スタジオ確保", "music+3")
+        _inject_support(alice, "ビラ配り", "draw+3")
+        _inject_support(alice, "顧問の口添え", "severity-2")
+        _inject_support(alice, "アンコール", "encore")
+        for card in list(alice.hand):
+            if card.kind == CardKind.SUPPORT:
+                state, _ = apply_action(state, alice.player_id,
+                                        UseSupportAction(card_instance_id=card.instance_id))
+
+        state, _ = apply_action(state, alice.player_id, EndTurnAction())
+
+        a = state.players[0]
+        assert a.pending_live_music_bonus == 0
+        assert a.pending_live_draw_bonus == 0
+        assert a.pending_severity_reduction == 0
+        assert a.encore_pending is False
+
+    def test_severity_reduction_applied_in_live(self):
+        """顧問の口添え reduces effective severity by 2 during judgment."""
+        from engine.catalog import all_incidents, instance_from_catalog
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
+
+        state.actions_remaining = 99
+        # severity=6 incident; human=4 per member × 3 = 12 >= 6 → passes without reduction
+        # Set human low so it fails WITHOUT reduction but passes WITH -2 reduction
+        # severity=5, human per member=1 → total human=3 → 3 < 5 → fail WITHOUT reduction
+        # With reduction: effective severity = 5-2 = 3 → 3 >= 3 → success
+        _inject_members(alice, count=3, draw=2, music=2, human=1)
+        state.incident_deck = [instance_from_catalog(
+            next(c for c in all_incidents() if (c.severity or 0) == 5)
+        )] * 5
+
+        card = _inject_support(alice, "顧問の口添え", "severity-2")
+        state, _ = apply_action(state, alice.player_id,
+                                UseSupportAction(card_instance_id=card.instance_id))
+
+        ids = [m.instance_id for m in alice.field_members[:3]]
+        state, _ = apply_action(state, alice.player_id, FormBandAction(member_instance_ids=ids))
+        state, _ = apply_action(state, alice.player_id, EndTurnAction())
+
+        assert len(state.last_live_results) > 0
+        assert state.last_live_results[0].success is True

@@ -138,6 +138,11 @@ class PlayerState(BaseModel):
     performance_record: int = 4
     mulligan_done: bool = False
     cannot_play_member: bool = False
+    free_member_play: bool = False
+    pending_live_draw_bonus: int = 0
+    pending_live_music_bonus: int = 0
+    pending_severity_reduction: int = 0
+    encore_pending: bool = False
 
 
 class GameState(BaseModel):
