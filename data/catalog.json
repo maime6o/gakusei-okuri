@@ -75,7 +75,7 @@
     {"name":"アンコール","kind":"support","phase":"action","effect":"encore","copies":1,"draw":0,"music":0,"human":0,
      "description":"このターン最初に成功したバンドが、もう一度ライブを行う。"},
     {"name":"引き抜き","kind":"support","phase":"action","effect":"poach_random_member","copies":1,"draw":0,"music":0,"human":0,
-     "description":"相手バンドのメンバーをランダムに1人、自分の手札に加える。"},
+     "description":"相手のバンドを1つランダムに解散させ、メンバーを1人自バンドへ引き抜く。残りは相手のフィールドへ戻る。"},
     {"name":"サークル活動報告書提出","kind":"support","phase":"action","effect":"performance_record+4","copies":1,"draw":0,"music":0,"human":0,
      "description":"自分の活動実績+4。次に出すメンバーの音楽性コストを賄える。"},
     {"name":"卒業","kind":"support","phase":"action","effect":"force_live_success","copies":1,"draw":0,"music":0,"human":0,
@@ -89,9 +89,9 @@
     {"name":"健康スポーツ学科の圧力","kind":"support","phase":"action","effect":"opponents_mobilization-5","copies":1,"draw":0,"music":0,"human":0,
      "description":"相手プレイヤー全員の動員数を-5する。"},
     {"name":"命短し恋せよ乙女","kind":"support","phase":"action","effect":"purge_band_females","copies":1,"draw":0,"music":0,"human":0,
-     "description":"自バンドのfemaleメンバーを全員除外する。"},
+     "description":"全プレイヤーのバンドからfemaleメンバーを全員学生課送りにする。バンドが空になれば解散。"},
     {"name":"大学院への進学","kind":"support","phase":"action","effect":"zero_music_deck_hand","copies":1,"draw":0,"music":0,"human":0,
-     "description":"相手の手札・デッキから音楽性が1以上のメンバーを全て除外する。"}
+     "description":"自分のデッキ・手札にあるメンバーの音楽性を全て0にする。"}
   ],
   "antis": [
     {"name":"通報","kind":"anti","phase":"judgment","effect":"severity+4","copies":1,"draw":0,"music":0,"human":0,
