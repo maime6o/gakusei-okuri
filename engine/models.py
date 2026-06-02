@@ -146,6 +146,7 @@ class PlayerState(BaseModel):
     pending_live_music_bonus: int = 0
     pending_severity_reduction: int = 0
     encore_pending: bool = False
+    force_live_success: bool = False
 
 
 class GameState(BaseModel):

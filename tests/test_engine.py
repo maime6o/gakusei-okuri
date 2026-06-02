@@ -60,20 +60,20 @@ class TestDeckBuilder:
     def test_fixed_deck_50_cards(self):
         builder = FixedDeckBuilder()
         deck = builder.build_player_deck(seed=0)
-        # 38 members + 8 supports + 4 antis = 50
-        assert len(deck) == 50, f"Expected 50 cards, got {len(deck)}"
+        # 52 members + 17 supports + 4 antis = 73
+        assert len(deck) == 73, f"Expected 73 cards, got {len(deck)}"
 
     def test_fixed_deck_has_members(self):
         builder = FixedDeckBuilder()
         deck = builder.build_player_deck()
         members = [c for c in deck if c.kind == CardKind.MEMBER]
-        assert len(members) == 38
+        assert len(members) == 52
 
     def test_fixed_deck_has_supports(self):
         builder = FixedDeckBuilder()
         deck = builder.build_player_deck()
         supports = [c for c in deck if c.kind == CardKind.SUPPORT]
-        assert len(supports) == 8
+        assert len(supports) == 17
 
     def test_fixed_deck_has_antis(self):
         builder = FixedDeckBuilder()
@@ -215,8 +215,22 @@ class TestActionPhase:
         high_music = next(c for c in all_members() if c.music > 4)
         card = instance_from_catalog(high_music)
         alice.hand.append(card)
-        with pytest.raises(ActionError, match="活動実績"):
+        with pytest.raises(ActionError, match="活動実績以上のバンドメンバーです"):
             apply_action(state, alice.player_id, PlayMemberAction(card_instance_id=card.instance_id))
+
+    def test_play_member_blocked_when_record_1_music_2(self):
+        """活動実績1のとき、音楽性2のメンバーは出せない。活動実績はマイナスにならない。"""
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
+        alice.performance_record = 1
+        from engine.catalog import all_members, instance_from_catalog
+        music2 = next(c for c in all_members() if c.music == 2)
+        card = instance_from_catalog(music2)
+        alice.hand.append(card)
+        with pytest.raises(ActionError, match="活動実績以上のバンドメンバーです"):
+            apply_action(state, alice.player_id, PlayMemberAction(card_instance_id=card.instance_id))
+        assert alice.performance_record == 1, "活動実績はマイナスにならない"
 
     def test_play_member_within_performance_record(self):
         state = _game_2p()
@@ -511,14 +525,15 @@ class TestJudgmentBoundary:
 
 class TestMemberRoster:
     def test_member_count(self):
-        """全メンバー種類: 基本18 + バリエーション6 = 24種"""
+        """全メンバー種類: 基本24 + バリエーション9 + トークン1 = 34種"""
         from engine.catalog import all_members
-        assert len(all_members()) == 24
+        assert len(all_members()) == 34
 
     def test_ability_members_have_abilities(self):
-        """能力付与8名 + バリエーション6名は ability != None"""
+        """アビリティ持ちメンバーは ability != None"""
         from engine.catalog import all_members
-        ability_ids = {4, 5, 10, 11, 12, 14, 17, 18, 19, 20, 21, 22, 23, 24}
+        ability_ids = {4, 5, 10, 12, 14, 17, 18, 19, 20, 21, 22, 23, 24,
+                       25, 26, 27, 28, 29, 30, 31, 32, 33}
         for m in all_members():
             if m.id in ability_ids:
                 assert m.ability is not None, f"{m.name}(id={m.id}) has no ability"
@@ -559,13 +574,14 @@ class TestNewAbilities:
         d, m, h = hooks.apply_on_band_stat(inst, 5, 5, 5)
         assert d == 8
 
-    def test_ichiro_draw_and_music_boost(self):
-        """id=11 Ichiro Yamaguchi: draw+2_music+1"""
-        from engine import hooks
-        inst = self._inst(11)
-        d, m, h = hooks.apply_on_band_stat(inst, 5, 5, 5)
-        assert d == 7
-        assert m == 6
+    def test_ichiro_raw_stats(self):
+        """id=11 Ichiro Yamaguchi: 能力なし、生のステータスで圧倒 (draw=50, music=300, human=50)"""
+        from engine.catalog import all_members
+        card = next(c for c in all_members() if c.id == 11)
+        assert card.ability is None
+        assert card.draw == 50
+        assert card.music == 300
+        assert card.human == 50
 
     def test_sama_d_hangover_music_boost(self):
         """id=23 さまD（二日酔い）: music+5"""

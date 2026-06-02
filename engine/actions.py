@@ -199,7 +199,7 @@ def _handle_play_member(
         raise ActionError("メンバーカードではありません")
     if card.music > player.performance_record:
         raise ActionError(
-            f"活動実績（{player.performance_record}）不足: {card.name}の加入コストは音楽性{card.music}"
+            f"活動実績以上のバンドメンバーです（活動実績: {player.performance_record}、{card.name}の音楽性: {card.music}）"
         )
 
     if player.free_member_play:
@@ -424,7 +424,7 @@ def _process_one_band(
     # Judgment: collect mods
     mods = hooks.JudgmentMods()
     for m in members:
-        ev = hooks.apply_on_judgment(m, mods)
+        ev = hooks.apply_on_judgment(m, mods, incident_name=incident_name)
         events.extend(ev)
 
     # Apply judgment-phase anti effects (auto-activate all queued anti cards)
@@ -440,6 +440,12 @@ def _process_one_band(
                 opponent.anti_zone.remove(anti)
                 opponent.discard.append(anti)
 
+    # 自己除外メンバーをバンドから取り除く（たうっつぃー等）
+    for remove_id in mods.self_remove_ids:
+        target = next((m for m in band.members if m.instance_id == remove_id), None)
+        if target:
+            band.members.remove(target)
+
     effective_human = max(0, band.live_human + mods.human_delta)
     effective_severity = max(0, severity + mods.severity_delta - player.pending_severity_reduction)
     if player.pending_severity_reduction > 0:
@@ -448,12 +454,19 @@ def _process_one_band(
     multiplier = 1.0  # 乗算廃止、バンドごとの対応力のみで判定
     judgment_value = effective_human
 
+    live_success = (judgment_value >= effective_severity)
+    if player.force_live_success:
+        if not live_success:
+            events.append("「卒業」: どんな事件でもライブ成功！")
+        live_success = True
+    elif mods.force_failure:
+        live_success = False
+
     events.append(
         f"判定: 対応力({judgment_value}) vs 事件性={effective_severity} "
-        f"{'→ 成功' if judgment_value >= effective_severity else '→ 事件発生'}"
+        f"{'→ 成功' if live_success else '→ 事件発生'}"
     )
 
-    live_success = (judgment_value >= effective_severity)
     raw_draw  = band.live_draw
     raw_music = band.live_music
     mob_gain = (raw_draw  + mods.success_draw_bonus)  if live_success else 0
@@ -592,6 +605,7 @@ def _end_party(
     player.pending_live_music_bonus = 0
     player.pending_severity_reduction = 0
     player.encore_pending = False
+    player.force_live_success = False
     for band in player.bands:
         band.did_live_this_turn = False
         band.live_draw = 0
@@ -644,6 +658,82 @@ def _apply_support_effect_action(
     elif effect == "encore":
         player.encore_pending = True
         events.append(f"「{card.name}」: 最初に成功したバンドがアンコールで追加ライブ！")
+    elif effect == "performance_record+4":
+        player.performance_record += 4
+        events.append(f"「{card.name}」: 活動実績+4（{player.performance_record - 4} → {player.performance_record}）")
+    elif effect == "force_live_success":
+        player.force_live_success = True
+        events.append(f"「{card.name}」: このターンのライブは必ず成功する")
+    elif effect == "opponents_record-3":
+        for p in s.players:
+            if p.player_id != player.player_id:
+                before = p.performance_record
+                p.performance_record = max(0, p.performance_record - 3)
+                events.append(f"「{card.name}」: {p.name}の活動実績 {before} → {p.performance_record}")
+    elif effect == "steal_random_band":
+        candidates = [(p, b) for p in s.players if p.player_id != player.player_id for b in p.bands]
+        if candidates:
+            target_p, stolen_band = random.choice(candidates)
+            target_p.bands.remove(stolen_band)
+            player.bands.append(stolen_band)
+            events.append(f"「{card.name}」: {target_p.name}のバンドを転売！")
+        else:
+            events.append(f"「{card.name}」: 対象バンドなし")
+    elif effect == "mobilization_transfer+15":
+        others = [p for p in s.players if p.player_id != player.player_id]
+        if others:
+            target_p = random.choice(others)
+            taken = min(15, target_p.cumulative_mobilization)
+            target_p.cumulative_mobilization -= taken
+            player.cumulative_mobilization += 15
+            events.append(f"「{card.name}」: {target_p.name}から動員-{taken}、自分+15")
+    elif effect == "opponents_mobilization-5":
+        for p in s.players:
+            if p.player_id != player.player_id:
+                before = p.cumulative_mobilization
+                p.cumulative_mobilization = max(0, p.cumulative_mobilization - 5)
+                events.append(f"「{card.name}」: {p.name}の動員数 {before} → {p.cumulative_mobilization}")
+    elif effect == "purge_band_females":
+        removed = []
+        for p in s.players:
+            for band in list(p.bands):
+                females = [m for m in band.members if m.gender == "female"]
+                for f in females:
+                    band.members.remove(f)
+                    removed.append(f"{p.name}の「{f.name}」")
+                if not band.members:
+                    p.bands.remove(band)
+        events.append(
+            f"「{card.name}」: {', '.join(removed)} を学生課送り"
+            if removed else f"「{card.name}」: 対象なし"
+        )
+    elif effect == "zero_music_deck_hand":
+        for c in player.deck + player.hand:
+            if c.kind == CardKind.MEMBER:
+                c.music = 0
+        events.append(f"「{card.name}」: 自分のデッキ・手札のメンバーの音楽性を全て0に")
+    elif effect == "poach_random_member":
+        candidates = [
+            (p, band)
+            for p in s.players if p.player_id != player.player_id
+            for band in p.bands if band.members
+        ]
+        if candidates:
+            target_p, source_band = random.choice(candidates)
+            stolen = random.choice(source_band.members)
+            source_band.members.remove(stolen)
+            remaining = list(source_band.members)
+            for m in remaining:
+                source_band.members.remove(m)
+                target_p.field_members.append(m)
+            target_p.bands.remove(source_band)
+            if player.bands:
+                player.bands[0].members.append(stolen)
+            else:
+                player.field_members.append(stolen)
+            events.append(f"「{card.name}」: {target_p.name}のバンドから「{stolen.name}」を引き抜き！相手バンド解散")
+        else:
+            events.append(f"「{card.name}」: 引き抜き対象なし")
     return events
 
 

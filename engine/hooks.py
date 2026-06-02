@@ -93,6 +93,82 @@ def apply_on_play(
         _draw_cards(player, 1)
         events.append(f"{member.name}の「{ab.name}」: 1枚ドロー")
 
+    elif effect == "action+1":
+        state.actions_remaining += 1
+        events.append(f"{member.name}の「{ab.name}」: 行動+1")
+
+    elif effect == "performance_record+2":
+        player.performance_record += 2
+        events.append(f"{member.name}の「{ab.name}」: 活動実績+2")
+
+    elif effect == "opponents_record-1":
+        for p in state.players:
+            if p.player_id != player.player_id:
+                p.performance_record = max(0, p.performance_record - 1)
+        names = ", ".join(p.name for p in state.players if p.player_id != player.player_id)
+        events.append(f"{member.name}の「{ab.name}」: {names} の活動実績-1")
+
+    elif effect == "recruit_from_deck":
+        import random
+        candidates = [c for c in player.deck if c.kind == "member"]
+        if candidates:
+            picked = random.choice(candidates)
+            player.deck.remove(picked)
+            if player.bands:
+                player.bands[0].members.append(picked)
+                events.append(f"{member.name}の「{ab.name}」: デッキから「{picked.name}」をバンドに追加")
+            else:
+                player.field_members.append(picked)
+                events.append(f"{member.name}の「{ab.name}」: デッキから「{picked.name}」をフィールドへ追加")
+        else:
+            events.append(f"{member.name}の「{ab.name}」: デッキにメンバーなし")
+
+    elif effect == "purge_opponent_males":
+        removed = []
+        for p in state.players:
+            if p.player_id == player.player_id:
+                continue
+            for band in list(p.bands):
+                males = [m for m in band.members if m.gender == "male"]
+                for m_card in males:
+                    band.members.remove(m_card)
+                    removed.append(m_card.name)
+                if not band.members:
+                    p.bands.remove(band)
+        events.append(
+            f"{member.name}の「{ab.name}」: {', '.join(removed)} を学生課送り"
+            if removed else f"{member.name}の「{ab.name}」: 対象なし"
+        )
+
+    elif effect == "draw_per_opponent_female":
+        count = sum(
+            1
+            for p in state.players if p.player_id != player.player_id
+            for band in p.bands
+            for m in band.members
+            if m.gender == "female"
+        )
+        if count > 0:
+            player.pending_live_draw_bonus += count
+            events.append(f"{member.name}の「{ab.name}」: 相手バンドfemale {count}名 → 集客力+{count}")
+        else:
+            events.append(f"{member.name}の「{ab.name}」: 相手バンドにfemaleなし")
+
+    elif effect.startswith("deal_token:"):
+        token_name = effect.split(":", 1)[1]
+        from engine.models import CardInstance, CardKind
+        for p in state.players:
+            token = CardInstance(
+                catalog_id=f"token_{token_name}",
+                kind=CardKind.MEMBER,
+                name=token_name,
+                part="Gt",
+                gender=None,
+                draw=0, music=0, human=0,
+            )
+            p.hand.append(token)
+        events.append(f"{member.name}の「{ab.name}」: 全プレイヤーの手札に「{token_name}」を追加")
+
     elif effect.startswith("mobilization+") and effect.endswith("_once"):
         if not member.used_once:
             n = int(effect.split("+")[1].split("_")[0])
@@ -128,18 +204,24 @@ def apply_on_form(
 class JudgmentMods(object):
     """Accumulated judgment-phase modifications for a single band's live."""
 
-    __slots__ = ("human_delta", "severity_delta", "success_draw_bonus", "success_music_bonus")
+    __slots__ = (
+        "human_delta", "severity_delta", "success_draw_bonus", "success_music_bonus",
+        "force_failure", "self_remove_ids",
+    )
 
     def __init__(self) -> None:
         self.human_delta = 0
         self.severity_delta = 0
         self.success_draw_bonus = 0
         self.success_music_bonus = 0
+        self.force_failure = False
+        self.self_remove_ids: list[str] = []
 
 
 def apply_on_judgment(
     member: "CardInstance",
     mods: JudgmentMods,
+    incident_name: str = "",
 ) -> list[str]:
     """Accumulate judgment mods from a member's ability. Mutates mods in place."""
     events: list[str] = []
@@ -153,6 +235,15 @@ def apply_on_judgment(
         return events
 
     effect = ab.effect
+
+    # 特定の事件でライブ強制失敗＋自身除外  例: "fail_on_留年_self_remove"
+    if effect.startswith("fail_on_") and effect.endswith("_self_remove"):
+        trigger = effect[len("fail_on_"):-len("_self_remove")]
+        if incident_name == trigger:
+            mods.force_failure = True
+            mods.self_remove_ids.append(member.instance_id)
+            events.append(f"{member.name}の「{ab.name}」: 「{incident_name}」発生 → ライブ強制失敗、{member.name}は学生課へ")
+        return events
 
     # human±N or severity±N
     deltas = _parse_delta(effect)
