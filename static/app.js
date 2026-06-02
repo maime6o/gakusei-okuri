@@ -39,6 +39,52 @@ const LP = {
   autoTimer: null,
 };
 
+// ── BGM ────────────────────────────────────────────────────────────────────
+const BGM = {
+  tracks: {
+    lobby: new Audio('/sounds/bgm_lobby.mp3'),
+    game:  new Audio('/sounds/bgm_game.mp3'),
+  },
+  current:  null,
+  muted:    false,
+  unlocked: false,
+};
+BGM.tracks.lobby.loop = true;
+BGM.tracks.game.loop  = true;
+
+function bgmPlay(name) {
+  if (BGM.current === name) return;
+  if (BGM.current && BGM.tracks[BGM.current]) {
+    BGM.tracks[BGM.current].pause();
+    BGM.tracks[BGM.current].currentTime = 0;
+  }
+  BGM.current = name;
+  if (name && !BGM.muted && BGM.tracks[name]) {
+    BGM.tracks[name].play().catch(() => {});
+  }
+}
+
+function bgmStop() { bgmPlay(null); }
+
+function bgmToggleMute() {
+  BGM.muted = !BGM.muted;
+  const btn = document.getElementById('bgm-mute-btn');
+  if (btn) btn.textContent = BGM.muted ? '🔇' : '🔊';
+  if (BGM.muted) {
+    if (BGM.current && BGM.tracks[BGM.current]) BGM.tracks[BGM.current].pause();
+  } else {
+    if (BGM.current && BGM.tracks[BGM.current]) BGM.tracks[BGM.current].play().catch(() => {});
+  }
+}
+
+function _bgmUnlock() {
+  if (BGM.unlocked) return;
+  BGM.unlocked = true;
+  bgmPlay('lobby');
+}
+document.addEventListener('click',      _bgmUnlock, { once: true });
+document.addEventListener('touchstart', _bgmUnlock, { once: true });
+
 // ── DOM ────────────────────────────────────────────────────────────────────
 const $  = id => document.getElementById(id);
 const esc = s  => String(s)
@@ -1116,6 +1162,13 @@ function onStateUpdate(gs) {
 
   const me = gs.players?.find(p => p.name === S.myName);
   if (me) S.myPlayerId = me.player_id;
+
+  // BGM 切り替え
+  if (['mulligan', 'action', 'live_processing'].includes(gs.phase)) {
+    bgmPlay('game');
+  } else if (gs.phase === 'game_over') {
+    bgmStop();
+  }
 
   // LP演出が進行中に次の更新が来た場合はpostStateだけ更新して待機
   if (LP.active) {
