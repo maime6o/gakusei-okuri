@@ -9,8 +9,8 @@
   --warn: #ff9800;
   --danger: #f44336;
   --radius: 8px;
-  --card-w: 72px;
-  --card-h: 100px;
+  --card-w: 108px;
+  --card-h: 150px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -209,8 +209,8 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
 
 .card-member-img {
   width: calc(100% + 8px);
-  margin: -4px -4px 4px -4px;
-  height: 58px;
+  margin: -4px -4px 5px -4px;
+  height: 88px;
   overflow: hidden;
   border-radius: 6px 6px 0 0;
   background: var(--accent2);
@@ -223,10 +223,24 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
   object-position: top center;
   display: block;
 }
-.card-name { font-size: 9px; font-weight: bold; line-height: 1.2; }
-.card-part { font-size: 9px; color: var(--accent); margin-top: 2px; }
-.card-stats { margin-top: auto; display: flex; gap: 3px; }
-.card-stat { font-size: 8px; background: var(--bg); padding: 1px 3px; border-radius: 3px; }
+.card-name {
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 1.2;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.card-part {
+  font-size: 10px;
+  color: var(--accent);
+  margin-top: 2px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.card-stats { margin-top: auto; display: flex; gap: 3px; flex-wrap: wrap; }
+.card-stat { font-size: 10px; background: var(--bg); padding: 1px 4px; border-radius: 3px; }
 .card-stat.draw { color: #64b5f6; }
 .card-stat.music { color: #ba68c8; }
 .card-stat.human { color: #ff6060; font-weight: bold; }
@@ -324,11 +338,11 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
   position: absolute;
   top: 2px;
   right: 2px;
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   background: rgba(15,52,96,0.85);
   border-radius: 50%;
-  font-size: 8px;
+  font-size: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -537,6 +551,6 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
 
 /* Responsive */
 @media (max-width: 480px) {
-  :root { --card-w: 64px; --card-h: 90px; }
+  :root { --card-w: 90px; --card-h: 126px; }
   .lobby-wrap { margin: 16px auto; }
 }
