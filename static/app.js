@@ -144,56 +144,87 @@ function render() {
 function renderLobby() {
   $('main-content').innerHTML = `
     <div class="lobby-wrap">
-      <h2>🎸 ほーろっくよーがっく2026</h2>
-      <div style="font-size:12px;color:var(--muted);margin-top:-8px;margin-bottom:4px;text-align:center">目指せ最高のライブ</div>
 
-      <div class="lobby-title-img-wrap">
-        <img class="lobby-title-img" src="/images/title.png" alt=""
-             onerror="this.parentNode.style.display='none'">
-      </div>
-
-      <div class="card-section">
-        <h3>📖 説明書</h3>
-        <div class="rulebook">
-          <h4>🏆 勝利条件</h4>
-          目標動員数（デフォルト120）に先に到達したプレイヤーの勝利。
-          <h4>🔄 ターンの流れ</h4>
-          行動ポイント3を使い、ドロー・メンバーをフィールドに出す・バンド結成を行う。ターン終了でライブ判定へ。
-          <h4>🎸 バンド結成</h4>
-          フィールドのメンバー3人以上を選んでバンドを組む。
-          <h4>⚡ ライブ判定</h4>
-          事件カードを1枚引き、バンドの対応力合計 ≥ 事件性なら成功。成功すると動員数・音楽性を獲得。失敗するとメンバー1名が学生課送り。
-          <h4>🃏 サポート / アンチ</h4>
-          サポートカードは自分のターンに使う補助効果。アンチカードは事前にセットしておくと相手のライブ時に自動発動。
+      <div class="lobby-hero">
+        <div class="lobby-hero-title">🎸 ほーろっくよーがっく2026</div>
+        <div class="lobby-hero-sub">目指せ最高のライブ</div>
+        <div class="lobby-title-img-wrap">
+          <img class="lobby-title-img" src="/images/title.png" alt=""
+               onerror="this.parentNode.style.display='none'">
         </div>
       </div>
 
       <div class="card-section">
-        <h3>🎮 このデバイスで全員プレイ（ホットシート）</h3>
+        <h3>📖 ゲームの流れ</h3>
+        <div class="rulebook">
+          <h4>🏆 勝利条件</h4>
+          目標動員数（80 / 120 / 160）に先に到達したプレイヤーの勝利。
+
+          <h4>🔄 ターンの流れ</h4>
+          行動ポイント3を消費して行動する。全員が初ターンを終えると、以降は毎ターン開始時に自動で1枚ドロー（無料）。ターン終了でライブ判定フェーズへ。
+
+          <h4>🎤 メンバーを出す</h4>
+          手札からメンバーをフィールドに出す（コスト1行動）。メンバーの音楽性が自分の<b>活動実績</b>を超えると出せない。ライブ成功のたびに活動実績+1。
+
+          <h4>🎸 バンド結成</h4>
+          フィールドのメンバー3人以上を選んでバンドを組む（コスト1行動）。パートや性別の組み合わせでバンド名がつき、ステータスにボーナスが入る。
+
+          <h4>⚡ ライブ判定</h4>
+          事件カードを1枚引き、バンドの<b>対応力 ≥ 事件性</b>なら成功。成功で動員数（集客力分）と音楽性を獲得。失敗するとメンバー1名が学生課送り。
+
+          <h4>🥊 対バン</h4>
+          自分のバンドと相手のバンドを選んで音楽性を比較。勝てば<b>自バンドの音楽性×2</b>の動員数を相手から奪える（行動1消費）。相手の音楽性は非公開。
+
+          <h4>🃏 サポート / アンチ</h4>
+          サポート: 自分のターンに使う補助効果（ドロー・動員操作など）。<br>
+          アンチ: 伏せておくと相手のターンに自動発動するトラップカード。
+        </div>
+      </div>
+
+      <div class="card-section">
+        <h3>🎸 バンド編成ボーナス</h3>
+        <div class="band-bonus-table">
+          <div class="bbt-row"><span class="bbt-name">無もなきスリーピース</span><span class="bbt-cond">Gt・Ba・Dr（3人）</span><span class="bbt-bonus">音+2 応+1</span></div>
+          <div class="bbt-row"><span class="bbt-name">通常バンド</span><span class="bbt-cond">Gt×2・Ba・Dr（4人）</span><span class="bbt-bonus">音+2 応+3</span></div>
+          <div class="bbt-row"><span class="bbt-name">ガールズバンド</span><span class="bbt-cond">全員 Female</span><span class="bbt-bonus">集+3 応+1</span></div>
+          <div class="bbt-row"><span class="bbt-name">ボーイズバンド</span><span class="bbt-cond">全員 Male</span><span class="bbt-bonus">集+1 音+1 応+1</span></div>
+        </div>
+        <div style="font-size:11px;color:var(--muted)">スリーピース/通常バンドは重複しない。ガールズ/ボーイズも重複しない。それ以外の組み合わせは複合発動。</div>
+      </div>
+
+      <div class="card-section lobby-play-section">
+        <h3>🎮 ホットシート（1台で全員プレイ）</h3>
         <p style="color:var(--muted);font-size:12px">1台を順番に回して遊びます。</p>
-        <button class="btn btn-primary" onclick="S.screen='hotseat_setup';render()">
+        <button class="btn btn-primary btn-lg" onclick="S.screen='hotseat_setup';render()">
           ホットシートで始める
         </button>
       </div>
+
       <div class="card-section">
-        <h3>📱 各自の端末で遊ぶ（オンライン）</h3>
-        <label>あなたの名前</label>
-        <input id="create-name" type="text" placeholder="例: Alice" maxlength="12">
-        <label>目標動員数</label>
-        <select id="create-target">
-          <option value="80">80（短め）</option>
-          <option value="120" selected>120（標準）</option>
-          <option value="160">160（長め）</option>
-        </select>
-        <button class="btn btn-primary" onclick="onCreateOnline()">部屋を作る</button>
-        <hr style="border-color:var(--accent2);margin:8px 0">
-        <label>あなたの名前</label>
-        <input id="join-name" type="text" placeholder="例: Bob" maxlength="12">
-        <label>部屋コード（5文字）</label>
-        <input id="join-code" type="text" placeholder="ABCDE" maxlength="5"
-               style="text-transform:uppercase;letter-spacing:4px;font-size:18px;text-align:center">
-        <button class="btn btn-secondary" onclick="onJoinOnline()">コードで参加</button>
+        <h3>📱 オンライン（各自の端末で）</h3>
+        <div class="online-subsection">
+          <div class="online-subsection-label">部屋を作る</div>
+          <label>あなたの名前</label>
+          <input id="create-name" type="text" placeholder="例: Alice" maxlength="12">
+          <label>目標動員数</label>
+          <select id="create-target">
+            <option value="80">80（短め）</option>
+            <option value="120" selected>120（標準）</option>
+            <option value="160">160（長め）</option>
+          </select>
+          <button class="btn btn-primary" onclick="onCreateOnline()">部屋を作る</button>
+        </div>
+        <div class="online-subsection">
+          <div class="online-subsection-label">部屋に参加する</div>
+          <label>あなたの名前</label>
+          <input id="join-name" type="text" placeholder="例: Bob" maxlength="12">
+          <label>部屋コード（5文字）</label>
+          <input id="join-code" type="text" placeholder="ABCDE" maxlength="5"
+                 style="text-transform:uppercase;letter-spacing:4px;font-size:18px;text-align:center">
+          <button class="btn btn-secondary" onclick="onJoinOnline()">コードで参加</button>
+        </div>
       </div>
+
       <div id="lobby-error" class="error-banner"></div>
     </div>`;
 }
@@ -553,10 +584,11 @@ function renderGame() {
       const rawDraw = mems.reduce((s,m) => s + m.draw, 0);
       const rawMus  = mems.reduce((s,m) => s + m.music, 0);
       const rawHum  = mems.reduce((s,m) => s + m.human, 0);
+      const bName   = getBandName(mems);
       html += `
         <div class="band-card">
           <div class="band-header">
-            <span style="font-size:12px">🎸 バンド（${mems.length}人）</span>
+            <span style="font-size:12px">🎸 ${bName ? `<b>${esc(bName)}</b>` : `バンド（${mems.length}人）`}</span>
             <div class="band-stats">
               <span style="color:#64b5f6">集${band.live_draw || rawDraw}</span>
               <span style="color:#ba68c8">音${band.live_music || rawMus}</span>
@@ -617,10 +649,11 @@ function renderGame() {
         const rawMus  = ms.reduce((s,m) => s + m.music, 0);
         const rawHum  = ms.reduce((s,m) => s + m.human, 0);
         const musLabel = b.live_music === -1 ? '??' : (b.live_music || rawMus);
+        const opBName  = getBandName(ms);
         html += `
           <div class="band-card">
             <div class="band-header">
-              <span style="font-size:11px">🎸 バンド（${ms.length}人）</span>
+              <span style="font-size:11px">🎸 ${opBName ? `<b>${esc(opBName)}</b>` : `バンド（${ms.length}人）`}</span>
               <div class="band-stats">
                 <span style="color:#64b5f6">集${b.live_draw || rawDraw}</span>
                 <span style="color:#ba68c8">音${musLabel}</span>
@@ -701,6 +734,26 @@ function renderToolbar(me, gs) {
             onclick="sendAction({type:'end_turn'})">
       ターン終了
     </button>`;
+}
+
+// ── バンド編成名 ──────────────────────────────────────────────────────────
+function getBandName(members) {
+  const parts = members.flatMap(m => m.part ? m.part.split('/') : []);
+  const pc = {};
+  parts.forEach(p => { pc[p] = (pc[p] || 0) + 1; });
+  const genders = members.map(m => m.gender);
+  const allFemale = genders.length > 0 && genders.every(g => g === 'female');
+  const allMale   = genders.length > 0 && genders.every(g => g === 'male');
+  const n = members.length;
+  const names = [];
+  if (n === 3 && (pc['Gt']||0) >= 1 && (pc['Ba']||0) >= 1 && (pc['Dr']||0) >= 1) {
+    names.push('無もなきスリーピース');
+  } else if (n === 4 && (pc['Gt']||0) >= 2 && (pc['Ba']||0) >= 1 && (pc['Dr']||0) >= 1) {
+    names.push('通常バンド');
+  }
+  if (allFemale) names.push('ガールズバンド');
+  else if (allMale) names.push('ボーイズバンド');
+  return names.join('・');
 }
 
 // ── 対バンモーダル ─────────────────────────────────────────────────────────

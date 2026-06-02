@@ -395,6 +395,18 @@ def _process_one_band(
             m, base_draw, base_music, base_human
         )
 
+    # Apply band composition bonuses
+    band_name, db, mb, hb = _band_composition(members)
+    if band_name:
+        base_draw  += db
+        base_music += mb
+        base_human += hb
+        bonus_parts = []
+        if db: bonus_parts.append(f"集{db:+d}")
+        if mb: bonus_parts.append(f"音{mb:+d}")
+        if hb: bonus_parts.append(f"応{hb:+d}")
+        events.append(f"バンド編成「{band_name}」ボーナス: {' '.join(bonus_parts)}")
+
     # Apply live-phase support/anti effects (from revealed cards in active turn)
     live_draw, live_music, live_human = _apply_live_effects(
         s, player, base_draw, base_music, base_human, events
@@ -628,14 +640,63 @@ def _end_party(
     s.actions_remaining = 3
     s.phase = Phase.ACTION
 
-    # 2ターン目以降はターン開始時に自動ドロー（行動ポイント消費なし）
-    if next_player.first_turn_done:
+    # 全員が初ターンを終えた後、ターン開始時に自動ドロー（行動ポイント消費なし）
+    if all(p.first_turn_done for p in s.players):
         card = _draw_one(next_player)
         if card:
             events.append(f"{next_player.name}: ターン開始ドロー（自動）")
 
     events.append(f"--- {next_player.name} のターン開始 (手札{len(next_player.hand)}枚 / 行動:{s.actions_remaining}) ---")
     return s, events
+
+
+# ---------------------------------------------------------------------------
+# バンド編成ボーナス
+# ---------------------------------------------------------------------------
+
+def _band_composition(members) -> tuple[str, int, int, int]:
+    """Return (band_name, draw_bonus, music_bonus, human_bonus) from member composition.
+
+    Rules 1&2 are exclusive (size-based). Rules 3&4 are exclusive (gender-based).
+    Other combinations stack.
+    """
+    from collections import Counter
+    parts: list[str] = []
+    for m in members:
+        if m.part:
+            parts.extend(m.part.split('/'))
+    pc = Counter(parts)
+
+    genders = [m.gender for m in members]
+    all_female = bool(genders) and all(g == 'female' for g in genders)
+    all_male   = bool(genders) and all(g == 'male'   for g in genders)
+
+    n = len(members)
+    names: list[str] = []
+    draw_bonus = music_bonus = human_bonus = 0
+
+    # Rule 1 vs 2 (mutually exclusive by size)
+    if n == 3 and pc.get('Gt',0) >= 1 and pc.get('Ba',0) >= 1 and pc.get('Dr',0) >= 1:
+        names.append("無もなきスリーピース")
+        music_bonus += 2
+        human_bonus += 1
+    elif n == 4 and pc.get('Gt',0) >= 2 and pc.get('Ba',0) >= 1 and pc.get('Dr',0) >= 1:
+        names.append("通常バンド")
+        music_bonus += 2
+        human_bonus += 3
+
+    # Rule 3 vs 4 (mutually exclusive by gender)
+    if all_female:
+        names.append("ガールズバンド")
+        draw_bonus  += 3
+        human_bonus += 1
+    elif all_male:
+        names.append("ボーイズバンド")
+        draw_bonus  += 1
+        music_bonus += 1
+        human_bonus += 1
+
+    return "・".join(names), draw_bonus, music_bonus, human_bonus
 
 
 # ---------------------------------------------------------------------------
@@ -651,7 +712,8 @@ def _compute_band_music(band) -> int:
         base_draw, base_music, base_human = hooks.apply_on_band_stat(
             m, base_draw, base_music, base_human
         )
-    return base_music
+    _, _, music_bonus, _ = _band_composition(members)
+    return base_music + music_bonus
 
 
 def _handle_taiban(

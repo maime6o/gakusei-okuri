@@ -40,32 +40,52 @@ main { flex: 1; padding: 12px; overflow-y: auto; }
 
 /* ── Lobby ── */
 .lobby-wrap {
-  max-width: 420px;
-  margin: 40px auto;
+  max-width: 460px;
+  margin: 24px auto;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
-.lobby-wrap h2 { font-size: 22px; text-align: center; }
+
+/* Hero banner */
+.lobby-hero {
+  background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 50%, #3d0d2b 100%);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 24px 16px 16px;
+  text-align: center;
+}
+.lobby-hero-title {
+  font-size: 22px;
+  font-weight: bold;
+  color: var(--accent);
+  letter-spacing: 1px;
+}
+.lobby-hero-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+  margin-bottom: 12px;
+}
 
 .lobby-title-img {
   width: 100%;
-  max-height: 180px;
+  max-height: 160px;
   object-fit: cover;
   border-radius: var(--radius);
   display: block;
 }
 .lobby-title-img-wrap {
   width: 100%;
-  background: var(--surface);
   border-radius: var(--radius);
   overflow: hidden;
-  min-height: 60px;
+  min-height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+/* Rulebook */
 .rulebook {
   font-size: 13px;
   line-height: 1.7;
@@ -77,6 +97,61 @@ main { flex: 1; padding: 12px; overflow-y: auto; }
   margin: 10px 0 4px;
 }
 .rulebook h4:first-child { margin-top: 0; }
+
+/* Band bonus table */
+.band-bonus-table {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.bbt-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.bbt-name {
+  font-weight: bold;
+  color: var(--accent);
+  min-width: 120px;
+}
+.bbt-cond {
+  color: var(--muted);
+  flex: 1;
+}
+.bbt-bonus {
+  color: #81c784;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+/* Play section */
+.lobby-play-section {
+  border: 2px solid var(--accent);
+}
+.btn-lg {
+  padding: 14px 24px;
+  font-size: 16px;
+}
+
+/* Online subsections */
+.online-subsection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--bg);
+  border-radius: 6px;
+}
+.online-subsection-label {
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--accent);
+  margin-bottom: 2px;
+}
 
 .card-section {
   background: var(--surface);
