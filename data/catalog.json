@@ -41,7 +41,7 @@
      "ability":{"name":"留年恐怖症","hook":"on_judgment","type":"judgment","effect":"fail_on_留年_self_remove"}},
     {"id":26,"name":"としっきー","kind":"member","part":"Gt","gender":"male","draw":1,"music":0,"human":2,"copies":2,
      "ability":{"name":"センスの塊","hook":"on_play","type":"on_play","effect":"draw_card"}},
-    {"id":27,"name":"走る足が見えた","kind":"member","part":"Gt","gender":"female","draw":2,"music":0,"human":2,"copies":1,
+    {"id":27,"name":"ちゃん床","kind":"member","part":"Gt","gender":"female","draw":2,"music":0,"human":2,"copies":1,
      "ability":{"name":"謎の配布","hook":"on_play","type":"on_play","effect":"deal_token:走る足(効果なし)"}},
     {"id":28,"name":"maki","kind":"member","part":"Ba","gender":"female","draw":1,"music":0,"human":3,"copies":2,
      "ability":{"name":"場のまとめ役","hook":"on_play","type":"on_play","effect":"action+1"}},
@@ -54,7 +54,7 @@
     {"id":32,"name":"たけるん","kind":"member","part":"Dr","gender":"male","draw":2,"music":1,"human":5,"copies":2,
      "ability":{"name":"実績アピール","hook":"on_play","type":"on_play","effect":"performance_record+2"}},
     {"id":33,"name":"いお","kind":"member","part":"Ba","gender":"female","draw":1,"music":1,"human":2,"copies":2,
-     "ability":{"name":"femaleシナジー","hook":"on_play","type":"on_play","effect":"draw_per_opponent_female"}},
+     "ability":{"name":"女性シナジー","hook":"on_play","type":"on_play","effect":"draw_per_opponent_female"}},
     {"id":34,"name":"走る足(効果なし)","kind":"member","part":"Gt","gender":null,"draw":0,"music":0,"human":0,"ability":null,"copies":0}
   ],
   "supports": [
@@ -89,7 +89,7 @@
     {"name":"健康スポーツ学科の圧力","kind":"support","phase":"action","effect":"opponents_mobilization-5","copies":1,"draw":0,"music":0,"human":0,
      "description":"相手プレイヤー全員の動員数を-5する。"},
     {"name":"命短し恋せよ乙女","kind":"support","phase":"action","effect":"purge_band_females","copies":1,"draw":0,"music":0,"human":0,
-     "description":"全プレイヤーのバンドからfemaleメンバーを全員学生課送りにする。バンドが空になれば解散。"},
+     "description":"全プレイヤーのバンドから女性メンバーを全員学生課送りにする。バンドが空になれば解散。"},
     {"name":"大学院への進学","kind":"support","phase":"action","effect":"zero_music_deck_hand","copies":1,"draw":0,"music":0,"human":0,
      "description":"自分のデッキ・手札にあるメンバーの音楽性を全て0にする。"}
   ],

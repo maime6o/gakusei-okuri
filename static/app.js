@@ -730,18 +730,22 @@ function cardInner(c) {
   const imgHtml = imgSrc
     ? `<div class="card-member-img"><img src="${imgSrc}" alt="" loading="lazy" onerror="this.parentNode.style.display='none'"></div>`
     : '';
+  const kindLabel = c.kind === 'member'
+    ? (c.part || '')
+    : `${_KIND_JA[c.kind]||c.kind}${c.phase ? ' · ' + (_PHASE_JA[c.phase]||c.phase) : ''}`;
+  const statsContent = c.kind === 'member'
+    ? `<span class="card-stat draw">集${c.draw}</span>
+       <span class="card-stat music">音${c.music}</span>
+       <span class="card-stat human">応${c.human}</span>`
+    : c.severity != null
+      ? `<span class="card-stat" style="color:var(--danger)">事件性 ${c.severity}</span>`
+      : `<div class="card-desc-preview">${esc(c.description || effectToJa(c.effect) || '')}</div>`;
   return `
     ${infoBtn}
     ${imgHtml}
     <div class="card-name">${esc(c.name||'')}</div>
-    <div class="card-part">${esc(c.part||c.kind||'')}</div>
-    <div class="card-stats">
-      ${c.kind === 'member'
-        ? `<span class="card-stat draw">集${c.draw}</span>
-           <span class="card-stat music">音${c.music}</span>
-           <span class="card-stat human">応${c.human}</span>`
-        : `<span class="card-stat" style="font-size:8px">${esc(c.phase||c.effect||'')}</span>`}
-    </div>`;
+    <div class="card-part">${esc(kindLabel)}</div>
+    <div class="card-stats">${statsContent}</div>`;
 }
 
 // ── アクション ─────────────────────────────────────────────────────────────
@@ -795,8 +799,42 @@ function memberImagePath(c) {
   return `/images/members/${partKey}_${c.gender}.png`;
 }
 
+const _KIND_JA = { member:'メンバー', support:'サポート', anti:'アンチ', incident:'事件' };
+const _PHASE_JA = { action:'アクション時', live:'ライブ前', judgment:'判定前' };
+
 function effectToJa(effect) {
   if (!effect) return '';
+  const exact = {
+    'draw_card':                'カード1枚ドロー',
+    'action+1':                 '行動ポイント+1',
+    'performance_record+2':     '活動実績+2',
+    'performance_record+4':     '活動実績+4',
+    'opponents_record-1':       '相手全員の活動実績-1',
+    'opponents_record-3':       '相手全員の活動実績-3',
+    'recruit_from_deck':        'デッキからメンバーを1人バンドへ加える',
+    'purge_opponent_males':     '相手バンドの男性メンバーを全員除外',
+    'draw_per_opponent_female': '相手バンドの女性1人につき集客力+1',
+    'free_play_member':         '次のメンバー1枚のコスト0',
+    'redraw_hand':              '手札を全て引き直す',
+    'encore':                   '最初に成功したバンドが追加ライブ',
+    'force_live_success':       'このターンのライブは必ず成功',
+    'steal_random_band':        '相手バンドを1つ奪い自フィールドへ',
+    'purge_band_females':       '全バンドの女性メンバーを学生課送り',
+    'zero_music_deck_hand':     '自分のデッキ・手札メンバーの音楽性を0に',
+    'poach_random_member':      '相手バンドを解散、メンバー1人を自バンドへ引き抜く',
+    'draw2':                    '手札を2枚引く',
+  };
+  if (exact[effect]) return exact[effect];
+  if (effect.startsWith('deal_token:'))
+    return `全員の手札に「${effect.split(':')[1]}」を追加`;
+  if (effect.startsWith('fail_on_') && effect.endsWith('_self_remove')) {
+    const t = effect.slice('fail_on_'.length, -'_self_remove'.length);
+    return `「${t}」発生時: ライブ強制失敗＋自身除外`;
+  }
+  if (effect.startsWith('mobilization_transfer+'))
+    return `動員数+${effect.split('+')[1]}`;
+  if (effect.startsWith('opponents_mobilization-'))
+    return `相手全員の動員数-${effect.split('-')[1]}`;
   return effect
     .replace(/success_draw([+-]\d+)/g, '成功時: 集客力$1')
     .replace(/success_music([+-]\d+)/g, '成功時: 音楽性$1')
@@ -804,8 +842,6 @@ function effectToJa(effect) {
     .replace(/music([+-]\d+)/g, '音楽性$1')
     .replace(/human([+-]\d+)/g, '対応力$1')
     .replace(/severity([+-]\d+)/g, '事件性$1')
-    .replace(/action\+1/g, '行動ポイント+1')
-    .replace(/draw_card/g, 'カード1枚ドロー')
     .replace(/_/g, ' / ');
 }
 
@@ -861,7 +897,7 @@ function showCardDetail(ev, instanceId) {
     <div class="modal" onclick="event.stopPropagation()">
       <div style="font-size:17px;font-weight:bold;color:var(--accent)">${esc(c.name||'？')}</div>
       <div style="font-size:12px;color:var(--muted)">
-        ${c.part ? esc(c.part) + ' · ' : ''}${esc(c.kind)}
+        ${c.part ? esc(c.part) + ' · ' : ''}${esc(_KIND_JA[c.kind]||c.kind)}
       </div>
       ${statsHtml}
       ${abilHtml}
