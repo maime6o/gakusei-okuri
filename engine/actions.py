@@ -79,10 +79,16 @@ class ChooseSotaiAction(BaseModel):
     member_instance_id: str
 
 
+class TaibanAction(BaseModel):
+    type: Literal["taiban"] = "taiban"
+    my_band_id: str
+    opponent_band_id: str
+
+
 AnyAction = Union[
     DrawAction, PlayMemberAction, FormBandAction, DisbandAction,
     UseSupportAction, SetAntiAction, RevealAntiAction,
-    EndTurnAction, MulliganAction, ChooseSotaiAction,
+    EndTurnAction, MulliganAction, ChooseSotaiAction, TaibanAction,
 ]
 
 
@@ -97,8 +103,9 @@ def apply_action(
 ) -> tuple[GameState, list[str]]:
     """Return (new_state, events). Never mutates state."""
     s = state.model_copy(deep=True)
-    # Clear stale live results on every action; EndTurnAction/ChooseSotaiAction repopulate.
+    # Clear stale live results and taiban result on every action.
     s.last_live_results = []
+    s.taiban_result = None
     events: list[str] = []
 
     if isinstance(action, MulliganAction):
@@ -129,6 +136,8 @@ def apply_action(
         return _handle_set_anti(s, player_id, action, events)
     if isinstance(action, EndTurnAction):
         return _handle_end_turn(s, player_id, events)
+    if isinstance(action, TaibanAction):
+        return _handle_taiban(s, player_id, action, events)
 
     raise ActionError(f"不明なアクション: {action}")
 
@@ -619,6 +628,83 @@ def _end_party(
     s.phase = Phase.ACTION
 
     events.append(f"--- {next_player.name} のターン開始 (手札{len(next_player.hand)}枚 / 行動:{s.actions_remaining}) ---")
+    return s, events
+
+
+# ---------------------------------------------------------------------------
+# 対バン
+# ---------------------------------------------------------------------------
+
+def _compute_band_music(band) -> int:
+    members = list(band.members)
+    base_draw = sum(m.draw for m in members)
+    base_music = sum(m.music for m in members)
+    base_human = sum(m.human for m in members)
+    for m in members:
+        base_draw, base_music, base_human = hooks.apply_on_band_stat(
+            m, base_draw, base_music, base_human
+        )
+    return base_music
+
+
+def _handle_taiban(
+    s: GameState, player_id: str, action: TaibanAction, events: list[str]
+) -> tuple[GameState, list[str]]:
+    _assert_current_player(s, player_id)
+    _cost_action(s, 1)
+    player = _get_player(s, player_id)
+
+    my_band = next((b for b in player.bands if b.band_id == action.my_band_id), None)
+    if not my_band:
+        raise ActionError("指定したバンドが見つかりません")
+    if not my_band.members:
+        raise ActionError("バンドにメンバーがいません")
+
+    opponent = None
+    opp_band = None
+    for p in s.players:
+        if p.player_id == player_id:
+            continue
+        for b in p.bands:
+            if b.band_id == action.opponent_band_id:
+                opponent = p
+                opp_band = b
+                break
+
+    if opp_band is None:
+        raise ActionError("相手のバンドが見つかりません")
+
+    my_music = _compute_band_music(my_band)
+    opp_music = _compute_band_music(opp_band)
+
+    if my_music > opp_music:
+        steal = my_music * 2
+        actual_steal = min(steal, opponent.cumulative_mobilization)
+        opponent.cumulative_mobilization -= actual_steal
+        player.cumulative_mobilization += actual_steal
+        events.extend([
+            f"{player.name}のバンドが対バンに勝利！（音楽性 {my_music} vs {opp_music}）",
+            f"動員数 {actual_steal} を {opponent.name} から奪った！",
+        ])
+        s.taiban_result = {
+            "winner": player.name,
+            "loser": opponent.name,
+            "my_music": my_music,
+            "opp_music": opp_music,
+            "steal": actual_steal,
+            "result": "win",
+        }
+    else:
+        events.append(f"{player.name}の対バンは敗北…（音楽性 {my_music} vs {opp_music}）")
+        s.taiban_result = {
+            "winner": opponent.name,
+            "loser": player.name,
+            "my_music": my_music,
+            "opp_music": opp_music,
+            "steal": 0,
+            "result": "lose",
+        }
+
     return s, events
 
 

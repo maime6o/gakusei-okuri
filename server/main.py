@@ -131,6 +131,7 @@ ACTION_MAP = {
     "end_turn":      "EndTurnAction",
     "mulligan":      "MulliganAction",
     "choose_sotai":  "ChooseSotaiAction",
+    "taiban":        "TaibanAction",
 }
 
 
@@ -267,7 +268,7 @@ def _make_payload(room: Any, player_name: str) -> dict:
 
 
 def _player_view(state: Any, player_id: str) -> dict:
-    """§4 privacy: hide other players' hand contents and face-down antis."""
+    """§4 privacy: hide other players' hand contents, face-down antis, and band music."""
     d = state.model_dump()
     for p in d["players"]:
         if p["player_id"] == player_id:
@@ -279,6 +280,9 @@ def _player_view(state: Any, player_id: str) -> dict:
             c if not c.get("face_down") else {"face_down": True, "instance_id": c["instance_id"]}
             for c in p["anti_zone"]
         ]
+        # Hide opponent band music values (-1 = sentinel for "unknown")
+        for band in p.get("bands", []):
+            band["live_music"] = -1
     return d
 
 

@@ -138,7 +138,7 @@ class PlayerState(BaseModel):
     discard: List[CardInstance] = Field(default_factory=list)
     cumulative_mobilization: int = 0
     music_score: int = 0
-    performance_record: int = 4
+    performance_record: int = 10
     mulligan_done: bool = False
     cannot_play_member: bool = False
     free_member_play: bool = False
@@ -163,6 +163,7 @@ class GameState(BaseModel):
     sotai_context: Optional[SotaiContext] = None
     pending_band_processes: List[PendingProcess] = Field(default_factory=list)
     last_live_results: List[LiveBandResult] = Field(default_factory=list)
+    taiban_result: Optional[dict] = None
 
     @property
     def current_player(self) -> PlayerState:

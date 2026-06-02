@@ -9,7 +9,7 @@ from engine.game import create_game, GameConfig
 from engine.actions import (
     apply_action, ActionError,
     MulliganAction, DrawAction, PlayMemberAction, FormBandAction,
-    EndTurnAction, ChooseSotaiAction, DisbandAction, UseSupportAction,
+    EndTurnAction, ChooseSotaiAction, DisbandAction, UseSupportAction, TaibanAction,
 )
 from engine.models import Phase, CardKind, CardInstance
 from engine.deck_builder import FixedDeckBuilder
@@ -122,10 +122,10 @@ class TestGameCreation:
         with pytest.raises(ValueError):
             create_game(["A", "B"], GameConfig(target_mobilization=100))
 
-    def test_initial_performance_record_4(self):
+    def test_initial_performance_record_10(self):
         state = _game_2p()
         for p in state.players:
-            assert p.performance_record == 4
+            assert p.performance_record == 10
 
 
 # ---------------------------------------------------------------------------
@@ -210,9 +210,9 @@ class TestActionPhase:
         state = _game_2p()
         state = _skip_mulligan(state)
         alice = state.players[0]
-        # Force a high-music card into hand
+        # Force a high-music card into hand (Ichiro has music=299, always > default 10)
         from engine.catalog import all_members, instance_from_catalog
-        high_music = next(c for c in all_members() if c.music > 4)
+        high_music = next(c for c in all_members() if c.music > 10)
         card = instance_from_catalog(high_music)
         alice.hand.append(card)
         with pytest.raises(ActionError, match="活動実績以上のバンドメンバーです"):
@@ -575,12 +575,12 @@ class TestNewAbilities:
         assert d == 8
 
     def test_ichiro_raw_stats(self):
-        """id=11 Ichiro Yamaguchi: 能力なし、生のステータスで圧倒 (draw=50, music=300, human=50)"""
+        """id=11 Ichiro Yamaguchi: 能力なし、生のステータスで圧倒 (draw=50, music=299, human=50)"""
         from engine.catalog import all_members
         card = next(c for c in all_members() if c.id == 11)
         assert card.ability is None
         assert card.draw == 50
-        assert card.music == 300
+        assert card.music == 299
         assert card.human == 50
 
     def test_sama_d_hangover_music_boost(self):
@@ -658,19 +658,19 @@ class TestNewAbilities:
 # ---------------------------------------------------------------------------
 
 class TestPerformanceRecord:
-    def test_music_5_card_blocked_at_record_4(self):
+    def test_music_4_card_blocked_at_record_3(self):
         from engine.catalog import all_members, instance_from_catalog
         state = _game_2p()
         state = _skip_mulligan(state)
         alice = state.players[0]
-        card5 = next(c for c in all_members() if c.music == 5)
-        inst = instance_from_catalog(card5)
+        alice.performance_record = 3
+        card4 = next(c for c in all_members() if c.music == 4)
+        inst = instance_from_catalog(card4)
         alice.hand.append(inst)
-        assert alice.performance_record == 4
         with pytest.raises(ActionError, match="活動実績"):
             apply_action(state, alice.player_id, PlayMemberAction(card_instance_id=inst.instance_id))
 
-    def test_music_4_card_allowed_at_record_4(self):
+    def test_music_4_card_allowed_at_record_10(self):
         from engine.catalog import all_members, instance_from_catalog
         state = _game_2p()
         state = _skip_mulligan(state)
@@ -685,10 +685,10 @@ class TestPerformanceRecord:
         state = _game_2p()
         state = _skip_mulligan(state)
         alice = state.players[0]
-        alice.performance_record = 5
+        alice.performance_record = 4
         from engine.catalog import all_members, instance_from_catalog
-        card5 = next(c for c in all_members() if c.music == 5)
-        inst = instance_from_catalog(card5)
+        card4 = next(c for c in all_members() if c.music == 4)
+        inst = instance_from_catalog(card4)
         alice.hand.append(inst)
         state, _ = apply_action(state, alice.player_id, PlayMemberAction(card_instance_id=inst.instance_id))
         assert any(m.instance_id == inst.instance_id for m in state.players[0].field_members)
@@ -1026,3 +1026,84 @@ class TestSupportEffects:
 
         assert len(state.last_live_results) > 0
         assert state.last_live_results[0].success is True
+
+
+# ---------------------------------------------------------------------------
+# TaibanAction
+# ---------------------------------------------------------------------------
+
+def _setup_taiban_state(my_music: int, opp_music: int):
+    """Return (state, alice_band_id, bob_band_id) with bands having given music totals."""
+    state = _game_2p()
+    state = _skip_mulligan(state)
+    state.actions_remaining = 99
+    alice = state.players[0]
+    bob = state.players[1]
+    _inject_members(alice, count=3, draw=2, music=my_music, human=2)
+    _inject_members(bob, count=3, draw=2, music=opp_music, human=2)
+    ids_a = [m.instance_id for m in alice.field_members[:3]]
+    state, _ = apply_action(state, alice.player_id, FormBandAction(member_instance_ids=ids_a))
+    alice_band_id = state.players[0].bands[-1].band_id
+    # Re-fetch bob from the new state (apply_action returns a deep copy)
+    bob = state.players[1]
+    from engine.models import Band
+    bob_band = Band(members=list(bob.field_members[:3]))
+    for m in bob_band.members:
+        bob.field_members.remove(m)
+    bob.bands.append(bob_band)
+    bob_band_id = bob_band.band_id
+    return state, alice_band_id, bob_band_id
+
+
+class TestTaibanAction:
+    def test_taiban_win_transfers_mobilization(self):
+        state, my_bid, opp_bid = _setup_taiban_state(my_music=3, opp_music=1)
+        alice = state.players[0]
+        bob = state.players[1]
+        alice.cumulative_mobilization = 0
+        bob.cumulative_mobilization = 20
+        state, events = apply_action(state, alice.player_id,
+                                     TaibanAction(my_band_id=my_bid, opponent_band_id=opp_bid))
+        # my_music=3*3=9, steal=9*2=18, bob has 20 → steal 18
+        assert state.players[0].cumulative_mobilization == 18
+        assert state.players[1].cumulative_mobilization == 2
+        assert state.taiban_result["result"] == "win"
+        assert any("勝利" in e for e in events)
+
+    def test_taiban_lose_no_transfer(self):
+        state, my_bid, opp_bid = _setup_taiban_state(my_music=1, opp_music=3)
+        alice = state.players[0]
+        bob = state.players[1]
+        bob.cumulative_mobilization = 20
+        state, events = apply_action(state, alice.player_id,
+                                     TaibanAction(my_band_id=my_bid, opponent_band_id=opp_bid))
+        assert state.players[1].cumulative_mobilization == 20
+        assert state.taiban_result["result"] == "lose"
+        assert any("敗北" in e for e in events)
+
+    def test_taiban_steal_capped_at_opponent_mobilization(self):
+        state, my_bid, opp_bid = _setup_taiban_state(my_music=3, opp_music=1)
+        alice = state.players[0]
+        bob = state.players[1]
+        bob.cumulative_mobilization = 5  # steal would be 18 but capped at 5
+        state, _ = apply_action(state, alice.player_id,
+                                TaibanAction(my_band_id=my_bid, opponent_band_id=opp_bid))
+        assert state.players[1].cumulative_mobilization == 0
+        assert state.players[0].cumulative_mobilization == 5
+        assert state.taiban_result["steal"] == 5
+
+    def test_taiban_invalid_band_id_raises(self):
+        state, my_bid, _ = _setup_taiban_state(my_music=3, opp_music=1)
+        alice = state.players[0]
+        with pytest.raises(ActionError, match="バンドが見つかりません"):
+            apply_action(state, alice.player_id,
+                         TaibanAction(my_band_id=my_bid, opponent_band_id="nonexistent"))
+
+    def test_taiban_result_cleared_on_next_action(self):
+        state, my_bid, opp_bid = _setup_taiban_state(my_music=3, opp_music=1)
+        state, _ = apply_action(state, state.players[0].player_id,
+                                TaibanAction(my_band_id=my_bid, opponent_band_id=opp_bid))
+        assert state.taiban_result is not None
+        # Next action clears it
+        state, _ = apply_action(state, state.players[0].player_id, DrawAction())
+        assert state.taiban_result is None

@@ -616,13 +616,14 @@ function renderGame() {
         const rawDraw = ms.reduce((s,m) => s + m.draw,  0);
         const rawMus  = ms.reduce((s,m) => s + m.music, 0);
         const rawHum  = ms.reduce((s,m) => s + m.human, 0);
+        const musLabel = b.live_music === -1 ? '??' : (b.live_music || rawMus);
         html += `
           <div class="band-card">
             <div class="band-header">
               <span style="font-size:11px">🎸 バンド（${ms.length}人）</span>
               <div class="band-stats">
                 <span style="color:#64b5f6">集${b.live_draw || rawDraw}</span>
-                <span style="color:#ba68c8">音${b.live_music || rawMus}</span>
+                <span style="color:#ba68c8">音${musLabel}</span>
                 <span style="color:#ef9a9a">応${b.live_human || rawHum}</span>
               </div>
             </div>
@@ -692,10 +693,93 @@ function renderToolbar(me, gs) {
       <button class="btn btn-secondary btn-sm" onclick="onSetAnti()">
         アンチ伏せる
       </button>` : ''}
+    ${me.bands?.length > 0 && gs.players.some(p => p.player_id !== S.myPlayerId && p.bands?.length > 0) ? `
+      <button class="btn btn-secondary btn-sm" onclick="openTaibanModal()">
+        🎸 対バン
+      </button>` : ''}
     <button class="btn btn-sm" style="background:var(--warn);color:#000;margin-left:auto"
             onclick="sendAction({type:'end_turn'})">
       ターン終了
     </button>`;
+}
+
+// ── 対バンモーダル ─────────────────────────────────────────────────────────
+function openTaibanModal() {
+  const gs = S.gameState;
+  const me = gs.players.find(p => p.player_id === S.myPlayerId);
+  if (!me || !me.bands?.length) return;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.style.display = 'flex';
+
+  function renderStep1() {
+    overlay.innerHTML = `<div class="modal">
+      <h2 style="margin-top:0">🎸 対バン — 自バンドを選択</h2>
+      ${me.bands.map(b => {
+        const mems = b.members || [];
+        const music = mems.reduce((s,m) => s + m.music, 0);
+        const names = mems.map(m => esc(m.name)).join('、');
+        return `<div class="band-card" style="cursor:pointer;margin-bottom:8px"
+                     onclick="window._taibanSelectMy('${b.band_id}')">
+          <div class="band-header">
+            <span>🎸 ${names}</span>
+            <span style="color:#ba68c8">音楽性計 ${music}</span>
+          </div>
+        </div>`;
+      }).join('')}
+      <button class="btn btn-sm btn-secondary" style="margin-top:8px"
+              onclick="this.closest('.modal-overlay').remove()">キャンセル</button>
+    </div>`;
+  }
+
+  window._taibanSelectMy = function(myBandId) {
+    const opponents = gs.players.filter(p => p.player_id !== S.myPlayerId && p.bands?.length > 0);
+    overlay.innerHTML = `<div class="modal">
+      <h2 style="margin-top:0">🎸 対バン — 相手バンドを選択</h2>
+      ${opponents.map(op => op.bands.map(b => {
+        const mems = b.members || [];
+        const names = mems.map(m => esc(m.name)).join('、');
+        return `<div class="band-card" style="cursor:pointer;margin-bottom:8px"
+                     onclick="window._taibanConfirm('${myBandId}','${b.band_id}')">
+          <div class="band-header">
+            <span>🎸 ${esc(op.name)}: ${names}</span>
+            <span style="color:#ba68c8">音楽性 ??</span>
+          </div>
+        </div>`;
+      }).join('')).join('')}
+      <button class="btn btn-sm btn-secondary" style="margin-top:8px"
+              onclick="window._taibanBack()">戻る</button>
+      <button class="btn btn-sm btn-secondary" style="margin-top:8px;margin-left:4px"
+              onclick="this.closest('.modal-overlay').remove()">キャンセル</button>
+    </div>`;
+  };
+
+  window._taibanBack = function() { renderStep1(); };
+
+  window._taibanConfirm = function(myBandId, oppBandId) {
+    overlay.remove();
+    sendAction({ type: 'taiban', my_band_id: myBandId, opponent_band_id: oppBandId });
+  };
+
+  renderStep1();
+  document.body.appendChild(overlay);
+}
+
+function showTaibanResultPopup(result) {
+  const win = result.result === 'win';
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.style.display = 'flex';
+  overlay.innerHTML = `<div class="modal" style="text-align:center">
+    <div style="font-size:32px;margin-bottom:8px">${win ? '🏆' : '😔'}</div>
+    <h2 style="margin:0 0 12px">${win ? '対バン勝利！' : '対バン敗北…'}</h2>
+    <p style="margin:4px 0">音楽性: <strong>${result.my_music}</strong> vs ${result.opp_music}</p>
+    ${win ? `<p style="margin:4px 0">動員数 <strong>+${result.steal}</strong> を ${esc(result.loser)} から奪いました！</p>` : `<p style="margin:4px 0">${esc(result.winner)} の勝ち</p>`}
+    <p style="color:var(--muted);font-size:12px;margin-top:12px">タップして閉じる</p>
+  </div>`;
+  overlay.onclick = () => overlay.remove();
+  document.body.appendChild(overlay);
 }
 
 // ── カードHTML ──────────────────────────────────────────────────────────────
@@ -1284,6 +1368,10 @@ function onStateUpdate(gs) {
       render();
       return;
     }
+  }
+
+  if (gs.taiban_result) {
+    showTaibanResultPopup(gs.taiban_result);
   }
 
   if (S.mode === 'hotseat') {
