@@ -615,6 +615,7 @@ def _end_party(
     player.pending_severity_reduction = 0
     player.encore_pending = False
     player.force_live_success = False
+    player.first_turn_done = True
     for band in player.bands:
         band.did_live_this_turn = False
         band.live_draw = 0
@@ -626,6 +627,12 @@ def _end_party(
     next_player = s.current_player
     s.actions_remaining = 3
     s.phase = Phase.ACTION
+
+    # 2ターン目以降はターン開始時に自動ドロー（行動ポイント消費なし）
+    if next_player.first_turn_done:
+        card = _draw_one(next_player)
+        if card:
+            events.append(f"{next_player.name}: ターン開始ドロー（自動）")
 
     events.append(f"--- {next_player.name} のターン開始 (手札{len(next_player.hand)}枚 / 行動:{s.actions_remaining}) ---")
     return s, events

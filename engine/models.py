@@ -147,6 +147,7 @@ class PlayerState(BaseModel):
     pending_severity_reduction: int = 0
     encore_pending: bool = False
     force_live_success: bool = False
+    first_turn_done: bool = False
 
 
 class GameState(BaseModel):
