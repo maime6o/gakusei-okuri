@@ -368,6 +368,57 @@ class TestLivePhase:
 
 
 # ---------------------------------------------------------------------------
+# 大編成ペナルティ（6人以上バンド → 事件2枚）
+# ---------------------------------------------------------------------------
+
+class TestLargeband:
+    def _setup_band(self, size: int, human: int, severity: int):
+        from engine.catalog import all_incidents, instance_from_catalog
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
+        state.actions_remaining = 99
+        _inject_members(alice, count=size, draw=3, music=2, human=human)
+        incident = next(c for c in all_incidents() if (c.severity or 0) == severity)
+        state.incident_deck = [instance_from_catalog(incident)] * 10
+        alice = state.players[0]
+        ids = [m.instance_id for m in alice.field_members[:size]]
+        state, _ = apply_action(state, alice.player_id, FormBandAction(member_instance_ids=ids))
+        return state, alice.player_id
+
+    def test_5_members_draws_one_incident(self):
+        """5人バンドは事件1枚（従来通り）"""
+        state, pid = self._setup_band(size=5, human=2, severity=6)
+        state, events = apply_action(state, pid, EndTurnAction())
+        incident_events = [e for e in events if '事件' in e and '大編成' not in e and 'severity=0' not in e and '山札' not in e]
+        assert not any('大編成' in e for e in events)
+
+    def test_6_members_draws_two_incidents(self):
+        """6人バンドは事件2枚引き → 事件性は合計値"""
+        state, pid = self._setup_band(size=6, human=2, severity=6)
+        state, events = apply_action(state, pid, EndTurnAction())
+        assert any('大編成ペナルティ' in e for e in events)
+        result = state.last_live_results[0]
+        # severity=6 の事件2枚 → effective severity は 12（- mods）
+        assert result.incident_severity >= 12 - 5  # antis/mods考慮で多少変動あり
+
+    def test_6_members_harder_to_pass(self):
+        """6人バンド: human=2×6=12 は severity=6×2=12 とぎりぎり成功"""
+        state, pid = self._setup_band(size=6, human=2, severity=6)
+        state, events = apply_action(state, pid, EndTurnAction())
+        result = state.last_live_results[0]
+        # human total = 12, severity total = 12 → 12 >= 12 → success
+        assert result.success is True
+
+    def test_6_members_fails_with_insufficient_human(self):
+        """6人バンド: human=1×6=6 は severity=6×2=12 に負ける"""
+        state, pid = self._setup_band(size=6, human=1, severity=6)
+        state, events = apply_action(state, pid, EndTurnAction())
+        result = state.last_live_results[0]
+        assert result.success is False
+
+
+# ---------------------------------------------------------------------------
 # Win condition
 # ---------------------------------------------------------------------------
 

@@ -397,16 +397,25 @@ def _process_one_band(
         f"集客力={band.live_draw} 音楽性={band.live_music} 対応力={band.live_human}"
     )
 
-    # Incident check
-    incident = _draw_incident(s)
-    if incident is None:
+    # Incident check（6人以上バンドは事件カード2枚引き）
+    draw_count = 2 if len(members) >= 6 else 1
+    drawn = [_draw_incident(s) for _ in range(draw_count)]
+    drawn = [i for i in drawn if i is not None]
+
+    if not drawn:
         events.append("事件山札が空 — 平和な一日（severity=0として処理）")
         severity = 0
         incident_name = "（なし）"
-    else:
-        severity = incident.severity or 0
-        incident_name = incident.name
+    elif len(drawn) == 1:
+        severity = drawn[0].severity or 0
+        incident_name = drawn[0].name
         events.append(f"事件: 「{incident_name}」（事件性={severity}）")
+    else:
+        severity = sum(i.severity or 0 for i in drawn)
+        names = " ＋ ".join(i.name for i in drawn)
+        incident_name = names
+        parts = " + ".join(str(i.severity or 0) for i in drawn)
+        events.append(f"事件（大編成ペナルティ）: 「{names}」（事件性={parts}={severity}）")
 
     # Judgment: collect mods
     mods = hooks.JudgmentMods()
