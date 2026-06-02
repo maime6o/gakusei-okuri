@@ -19,7 +19,7 @@
       "part": "Gt",
       "gender": "male",
       "draw": 4,
-      "music": 0,
+      "music": 1,
       "human": 1,
       "ability": null,
       "copies": 2
@@ -31,7 +31,7 @@
       "part": "Gt",
       "gender": "male",
       "draw": 3,
-      "music": 0,
+      "music": 1,
       "human": 2,
       "ability": null,
       "copies": 2
@@ -183,7 +183,7 @@
       "part": "Ba",
       "gender": "female",
       "draw": 3,
-      "music": 0,
+      "music": 1,
       "human": 2,
       "copies": 2,
       "ability": {
@@ -212,7 +212,7 @@
       "part": "Gt",
       "gender": "male",
       "draw": 5,
-      "music": 0,
+      "music": 1,
       "human": 1,
       "ability": null,
       "copies": 2
@@ -292,7 +292,7 @@
       "part": "Gt",
       "gender": "male",
       "draw": 4,
-      "music": 0,
+      "music": 1,
       "human": 5,
       "copies": 1,
       "ability": {
@@ -479,7 +479,7 @@
       "part": "Dr",
       "gender": "male",
       "draw": 2,
-      "music": 0,
+      "music": 1,
       "human": 5,
       "copies": 2,
       "ability": {
@@ -496,7 +496,7 @@
       "part": "Ba",
       "gender": "female",
       "draw": 1,
-      "music": 0,
+      "music": 1,
       "human": 2,
       "copies": 2,
       "ability": {

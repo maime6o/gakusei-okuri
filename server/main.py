@@ -280,9 +280,13 @@ def _player_view(state: Any, player_id: str) -> dict:
             c if not c.get("face_down") else {"face_down": True, "instance_id": c["instance_id"]}
             for c in p["anti_zone"]
         ]
-        # Hide opponent band music values (-1 = sentinel for "unknown")
+        # Hide opponent member and band music values (-1 = sentinel for "unknown")
         for band in p.get("bands", []):
             band["live_music"] = -1
+            for member in band.get("members", []):
+                member["music"] = -1
+        for member in p.get("field_members", []):
+            member["music"] = -1
     return d
 
 

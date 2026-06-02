@@ -819,7 +819,7 @@ function cardInner(c) {
     : `${_KIND_JA[c.kind]||c.kind}${c.phase ? ' · ' + (_PHASE_JA[c.phase]||c.phase) : ''}`;
   const statsContent = c.kind === 'member'
     ? `<span class="card-stat draw">集${c.draw}</span>
-       <span class="card-stat music">音${c.music}</span>
+       <span class="card-stat music">音${c.music === -1 ? '??' : c.music}</span>
        <span class="card-stat human">応${c.human}</span>`
     : c.severity != null
       ? `<span class="card-stat" style="color:var(--danger)">事件性 ${c.severity}</span>`
@@ -949,7 +949,7 @@ function showCardDetail(ev, instanceId) {
     if (c.kind === 'member') {
       return `<div class="cdd-stats">
         <span style="color:#64b5f6">集客&nbsp;<b>${c.draw}</b></span>
-        <span style="color:#ba68c8">音楽&nbsp;<b>${c.music}</b></span>
+        <span style="color:#ba68c8">音楽&nbsp;<b>${c.music === -1 ? '??' : c.music}</b></span>
         <span style="color:#ff6060">対応力&nbsp;<b>${c.human}</b></span>
       </div>`;
     }
@@ -1014,7 +1014,7 @@ function onCardEnter(ev, instanceId) {
     }
 
     const statsLine = c.kind === 'member'
-      ? `集${c.draw}&nbsp;/&nbsp;音${c.music}&nbsp;/&nbsp;応<span style="color:#ff6060;font-weight:bold">${c.human}</span>`
+      ? `集${c.draw}&nbsp;/&nbsp;音${c.music === -1 ? '??' : c.music}&nbsp;/&nbsp;応<span style="color:#ff6060;font-weight:bold">${c.human}</span>`
       : c.severity != null ? `事件性: ${c.severity}` : '';
 
     const abilLine = (() => {
