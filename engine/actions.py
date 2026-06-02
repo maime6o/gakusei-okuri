@@ -454,6 +454,7 @@ def _process_one_band(
                 name=m.name,
                 kind=m.kind.value,
                 part=m.part,
+                gender=m.gender,
                 draw=m.draw,
                 music=m.music,
                 human=m.human,

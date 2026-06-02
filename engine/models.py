@@ -56,6 +56,7 @@ class LiveMemberSummary(BaseModel):
     name: str
     kind: str = "member"
     part: Optional[str] = None
+    gender: Optional[str] = None
     draw: int = 0
     music: int = 0
     human: int = 0
