@@ -416,7 +416,7 @@ function renderGame() {
                      && gs.sotai_context?.nominator_player_id === S.myPlayerId;
   const isOnline   = S.mode === 'online';
 
-  let html = '<div class="board">';
+  let html = '<div class="board"><div class="game-layout"><div class="game-main">';
 
   // ── 勝利 ──
   if (gs.phase === 'game_over') {
@@ -430,7 +430,7 @@ function renderGame() {
         <button class="btn btn-secondary" style="margin-top:20px"
                 onclick="location.reload()">ロビーへ戻る</button>
       </div>`;
-    $('main-content').innerHTML = html + '</div>';
+    $('main-content').innerHTML = html + '</div></div></div>';
     return;
   }
 
@@ -453,7 +453,7 @@ function renderGame() {
   }
   html += '</div>';
 
-  if (!me) { $('main-content').innerHTML = html + '</div>'; return; }
+  if (!me) { $('main-content').innerHTML = html + '</div></div></div>'; return; }
 
   // ── 自分のステータスチップ ──
   html += `
@@ -586,45 +586,73 @@ function renderGame() {
       </div>`;
   }
 
-  // ── 他プレイヤーサマリー ──
+  // ── 他プレイヤー（画像付き） ──
   for (const op of gs.players) {
     if (op.player_id === S.myPlayerId) continue;
     const handCount  = typeof op.hand === 'object' && !Array.isArray(op.hand)
                          ? op.hand.count : (op.hand?.length ?? 0);
     const isOpActive = op.player_id === cp?.player_id;
     html += `
-      <div class="card-section" style="padding:8px 12px;${isOpActive?'border-color:var(--accent)':''}">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <span>${esc(op.name)}${isOpActive?' ◀ 手番':''}</span>
-          <span style="color:var(--muted);font-size:11px">
-            手札:${handCount}枚 バンド:${op.bands?.length??0} 活動実績:${op.performance_record}
+      <div class="card-section opponent-section${isOpActive?' opponent-active':''}">
+        <div class="opponent-header">
+          <span class="opponent-name">${esc(op.name)}${isOpActive?' ◀ 手番':''}</span>
+          <span class="opponent-meta">
+            手札:${handCount}枚 &nbsp; 活動実績:${op.performance_record} &nbsp; 動員:${op.cumulative_mobilization}
           </span>
-        </div>
-        ${(op.bands?.length??0) > 0 ? `
-          <div class="bands-section" style="margin-top:6px">
-            ${(op.bands||[]).map(b => {
-              const ms = b.members||[];
-              return `<div class="band-card" style="padding:6px 8px">
-                <div style="font-size:11px;color:var(--muted)">
-                  ${ms.map(m=>esc(m.name)).join(' / ')}
-                  — 集${b.live_draw||ms.reduce((s,m)=>s+m.draw,0)}
-                    音${b.live_music||ms.reduce((s,m)=>s+m.music,0)}
-                    応${b.live_human||ms.reduce((s,m)=>s+m.human,0)}
-                </div>
-              </div>`;
-            }).join('')}
-          </div>` : ''}
-      </div>`;
+        </div>`;
+    if ((op.field_members?.length ?? 0) > 0) {
+      html += `
+        <div>
+          <div class="section-title" style="font-size:11px">フィールド（${op.field_members.length}人）</div>
+          <div class="cards-row">
+            ${op.field_members.map(m => cardHtml(m, {small: true})).join('')}
+          </div>
+        </div>`;
+    }
+    if ((op.bands?.length ?? 0) > 0) {
+      html += `<div class="bands-section">`;
+      for (const b of op.bands) {
+        const ms      = b.members || [];
+        const rawDraw = ms.reduce((s,m) => s + m.draw,  0);
+        const rawMus  = ms.reduce((s,m) => s + m.music, 0);
+        const rawHum  = ms.reduce((s,m) => s + m.human, 0);
+        html += `
+          <div class="band-card">
+            <div class="band-header">
+              <span style="font-size:11px">🎸 バンド（${ms.length}人）</span>
+              <div class="band-stats">
+                <span style="color:#64b5f6">集${b.live_draw || rawDraw}</span>
+                <span style="color:#ba68c8">音${b.live_music || rawMus}</span>
+                <span style="color:#ef9a9a">応${b.live_human || rawHum}</span>
+              </div>
+            </div>
+            <div class="cards-row">
+              ${ms.map(m => cardHtml(m, {small: true})).join('')}
+            </div>
+          </div>`;
+      }
+      html += '</div>';
+    }
+    html += '</div>';
   }
 
-  // ── イベントログ ──
-  const log = (gs.event_log || []).slice(-40).reverse();
+  // close game-main, build sidebar log
+  html += '</div>';
+
+  const opNames  = gs.players.filter(p => p.player_id !== S.myPlayerId).map(p => p.name);
+  const logItems = (gs.event_log || []).slice(-60).reverse();
+  const logHtml  = logItems.map(l => {
+    const cls = opNames.some(n => l.includes(n)) ? 'log-opponent' : '';
+    return `<div class="log-entry ${cls}">${esc(l)}</div>`;
+  }).join('');
+
   html += `
-    <div class="log-panel">
-      ${log.map(l => `<div class="log-entry">${esc(l)}</div>`).join('')}
+    <div class="game-sidebar">
+      <div class="section-title" style="margin-bottom:6px;font-size:12px">イベントログ</div>
+      <div class="log-panel">${logHtml}</div>
     </div>`;
 
-  html += '</div>';
+  html += '</div></div>'; // game-layout + board
   $('main-content').innerHTML = html;
 
   // ツールバー（自分のターンのみ）

@@ -549,6 +549,54 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
   transform: rotateY(180deg);
 }
 
+/* ── Game 2-column layout ── */
+.game-layout {
+  display: grid;
+  grid-template-columns: 1fr 240px;
+  gap: 12px;
+  align-items: start;
+}
+.game-main {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.game-sidebar {
+  position: sticky;
+  top: 60px;
+  display: flex;
+  flex-direction: column;
+}
+.game-sidebar .log-panel {
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+/* Opponent section */
+.opponent-section { border: 1px solid var(--accent2); }
+.opponent-active  { border-color: var(--accent) !important; }
+.opponent-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.opponent-name { font-weight: bold; font-size: 13px; }
+.opponent-meta { color: var(--muted); font-size: 11px; }
+
+/* Log colors */
+.log-panel { max-height: none; }
+.log-entry.log-opponent { color: var(--warn); }
+
+@media (max-width: 700px) {
+  .game-layout { grid-template-columns: 1fr; }
+  .game-sidebar { position: static; }
+  .game-sidebar .log-panel { max-height: 180px; }
+}
+
 /* BGM panel */
 .bgm-panel {
   position: fixed;
