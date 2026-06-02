@@ -199,7 +199,7 @@ def _handle_play_member(
         raise ActionError("メンバーカードではありません")
     if card.music > player.performance_record:
         raise ActionError(
-            f"活動実績（{player.performance_record}）不足: {card.name}はmusic={card.music}が必要"
+            f"活動実績（{player.performance_record}）不足: {card.name}の加入コストは音楽性{card.music}"
         )
 
     if player.free_member_play:
@@ -207,6 +207,10 @@ def _handle_play_member(
         events.append("助っ人ヘルプ発動: コスト0でプレイ")
     else:
         _cost_action(s, 1)
+        if card.music > 0:
+            before = player.performance_record
+            player.performance_record -= card.music
+            events.append(f"活動実績 {before} → {player.performance_record}（音楽性コスト -{card.music}）")
     player.hand.remove(card)
     player.field_members.append(card)
 

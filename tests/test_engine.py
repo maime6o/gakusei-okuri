@@ -669,10 +669,10 @@ class TestPerformanceRecord:
         state = _game_2p()
         state = _skip_mulligan(state)
         alice = state.players[0]
-        alice.performance_record = 6
+        alice.performance_record = 5
         from engine.catalog import all_members, instance_from_catalog
-        card6 = next(c for c in all_members() if c.music == 6)
-        inst = instance_from_catalog(card6)
+        card5 = next(c for c in all_members() if c.music == 5)
+        inst = instance_from_catalog(card5)
         alice.hand.append(inst)
         state, _ = apply_action(state, alice.player_id, PlayMemberAction(card_instance_id=inst.instance_id))
         assert any(m.instance_id == inst.instance_id for m in state.players[0].field_members)
