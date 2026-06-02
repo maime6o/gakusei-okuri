@@ -48,9 +48,12 @@ const BGM = {
   current:  null,
   muted:    false,
   unlocked: false,
+  volume:   0.3,
 };
-BGM.tracks.lobby.loop = true;
-BGM.tracks.game.loop  = true;
+BGM.tracks.lobby.loop   = true;
+BGM.tracks.game.loop    = true;
+BGM.tracks.lobby.volume = BGM.volume;
+BGM.tracks.game.volume  = BGM.volume;
 
 function bgmPlay(name) {
   if (BGM.current === name) return;
@@ -75,6 +78,13 @@ function bgmToggleMute() {
   } else {
     if (BGM.current && BGM.tracks[BGM.current]) BGM.tracks[BGM.current].play().catch(() => {});
   }
+}
+
+function bgmSetVolume(val) {
+  BGM.volume = val / 100;
+  for (const t of Object.values(BGM.tracks)) t.volume = BGM.volume;
+  const btn = document.getElementById('bgm-mute-btn');
+  if (btn) btn.textContent = BGM.volume === 0 ? '🔇' : '🔊';
 }
 
 function _bgmUnlock() {
