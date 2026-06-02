@@ -590,11 +590,6 @@ def _end_party(
     s.actions_remaining = 3
     s.phase = Phase.ACTION
 
-    # Draw up to 6 cards at turn start
-    to_draw = max(0, 6 - len(next_player.hand))
-    if to_draw:
-        _draw_cards_player(next_player, to_draw)
-
     events.append(f"--- {next_player.name} のターン開始 (手札{len(next_player.hand)}枚 / 行動:{s.actions_remaining}) ---")
     return s, events
 

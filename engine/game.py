@@ -33,7 +33,8 @@ def create_game(
     for i, name in enumerate(player_names):
         deck = builder.build_player_deck(seed=(seed + i) if seed is not None else None)
         hand: list = []
-        for _ in range(5):
+        initial_cards = 5 if i == 0 else 6
+        for _ in range(initial_cards):
             if deck:
                 hand.append(deck.pop())
         pid = f"player_{i}"

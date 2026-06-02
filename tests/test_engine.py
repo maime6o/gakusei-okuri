@@ -104,10 +104,11 @@ class TestGameCreation:
         state = _game_2p()
         assert state.phase == Phase.MULLIGAN
 
-    def test_players_have_5_cards(self):
+    def test_initial_hand_sizes(self):
+        """Player 1 gets 5 cards (first-player disadvantage); others get 6."""
         state = _game_2p()
-        for p in state.players:
-            assert len(p.hand) == 5
+        assert len(state.players[0].hand) == 5
+        assert len(state.players[1].hand) == 6
 
     def test_player_count_2(self):
         state = _game_2p()
