@@ -177,6 +177,11 @@ async def _handle_message(ws: WebSocket, room: Any, player_name: str, raw: str):
         await ws.send_json({"type": "error", "message": "typeフィールドが必要です"})
         return
 
+    # LP sync signal — relay to other connections, not a game action
+    if atype == "lp_sync":
+        await _relay_to_others(room, player_name, msg)
+        return
+
     class_name = ACTION_MAP.get(atype)
     if not class_name:
         await ws.send_json({"type": "error", "message": f"不明なアクション: {atype}"})
@@ -220,6 +225,19 @@ async def _send_to(ws: WebSocket, room: Any, player_name: str) -> None:
 async def _broadcast(room: Any) -> None:
     for name, conns in list(room.connections.items()):
         payload = json.dumps(_make_payload(room, name))
+        for conn in list(conns):
+            try:
+                await conn.send_text(payload)
+            except Exception:
+                pass
+
+
+async def _relay_to_others(room: Any, sender_name: str, msg: dict) -> None:
+    """Relay a message as-is to all connections except the sender."""
+    payload = json.dumps(msg)
+    for name, conns in list(room.connections.items()):
+        if name == sender_name:
+            continue
         for conn in list(conns):
             try:
                 await conn.send_text(payload)

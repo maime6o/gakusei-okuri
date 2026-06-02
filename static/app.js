@@ -996,7 +996,7 @@ function renderLivePres() {
 
   if (!LP.isActiveLivePlayer) {
     clearTimeout(LP.autoTimer);
-    LP.autoTimer = setTimeout(lpAdvance, 5000);
+    LP.autoTimer = setTimeout(lpAdvance, 30000); // sync via lp_sync; fallback for disconnects
   }
 }
 
@@ -1142,20 +1142,32 @@ function lpStep3(res, cur, total) {
   _lpToolbar(true, nextLabel);
 }
 
+function _lpSyncSend(kind, bandIdx, step) {
+  if (S.mode === 'online' && LP.isActiveLivePlayer && S.ws?.readyState === WebSocket.OPEN) {
+    S.ws.send(JSON.stringify({ type: 'lp_sync', kind, band_idx: bandIdx, step }));
+  }
+}
+
 function lpAdvance() {
   clearTimeout(LP.autoTimer);
   LP.step++;
   if (LP.step > 3) {
     LP.bandIdx++;
     LP.step = 0;
-    if (LP.bandIdx >= LP.bandResults.length) { lpEnd(); return; }
+    if (LP.bandIdx >= LP.bandResults.length) {
+      _lpSyncSend('end', 0, 0);
+      lpEnd();
+      return;
+    }
   }
+  _lpSyncSend('step', LP.bandIdx, LP.step);
   renderLivePres();
 }
 
 function lpBack() {
   clearTimeout(LP.autoTimer);
   if (LP.step > 0) LP.step--;
+  _lpSyncSend('step', LP.bandIdx, LP.step);
   renderLivePres();
 }
 
@@ -1201,6 +1213,20 @@ function connectWs() {
       S.gameState = { players: msg.players };
       if (S.screen !== 'waiting') S.screen = 'waiting';
       render();
+      return;
+    }
+
+    if (msg.type === 'lp_sync') {
+      if (LP.active) {
+        clearTimeout(LP.autoTimer);
+        if (msg.kind === 'end') {
+          lpEnd();
+        } else {
+          LP.bandIdx = msg.band_idx;
+          LP.step    = msg.step;
+          renderLivePres();
+        }
+      }
       return;
     }
 
