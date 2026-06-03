@@ -969,6 +969,18 @@ def _apply_support_effect_action(
             if c.kind == CardKind.MEMBER:
                 c.music = 0
         events.append(f"「{card.name}」: 自分のデッキ・手札のメンバーの音楽性を全て0に")
+    elif effect == "use_random_supports+2":
+        candidates = [c for c in player.deck if c.kind == CardKind.SUPPORT and c.phase == "action"
+                      and c.effect not in ("sell_member_to_opponent",)]
+        picked = random.sample(candidates, min(2, len(candidates)))
+        for sc in picked:
+            player.deck.remove(sc)
+            player.discard.append(sc)
+            ev2 = _apply_support_effect_action(sc, player, s, None)
+            events.append(f"「{card.name}」: デッキから「{sc.name}」を発動")
+            events.extend(ev2)
+        if not picked:
+            events.append(f"「{card.name}」: デッキにサポートカードなし")
     elif effect == "poach_random_member":
         candidates = [
             (p, band)

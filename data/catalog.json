@@ -296,9 +296,9 @@
         "name": "伝説のライブ",
         "hook": "on_judgment",
         "type": "judgment",
-        "effect": "success_draw+5_success_music+2"
+        "effect": "success_draw+1_success_music+2"
       },
-      "description": "ライブ成功時、手札を5枚引き、音楽性累計+2。"
+      "description": "ライブ成功時、手札を1枚引き、音楽性累計+2。"
     },
     {
       "id": 18,
@@ -628,12 +628,12 @@
       "name": "ビラ配り",
       "kind": "support",
       "phase": "action",
-      "effect": "draw+3",
+      "effect": "use_random_supports+2",
       "copies": 1,
       "draw": 0,
       "music": 0,
       "human": 0,
-      "description": "このターン、自バンドの集客力+3。"
+      "description": "デッキからランダムなサポートカードを2枚使用する。"
     },
     {
       "name": "助っ人ヘルプ",
