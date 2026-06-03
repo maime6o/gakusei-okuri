@@ -977,9 +977,11 @@ async function showCatalogModal() {
     return `
       <div class="catalog-card">
         ${imgHtml}
-        <div class="catalog-name">${esc(c.name)}</div>
-        ${statsHtml}
-        ${abilityHtml}
+        <div class="catalog-card-body">
+          <div class="catalog-name">${esc(c.name)}</div>
+          ${statsHtml}
+          ${abilityHtml}
+        </div>
       </div>`;
   }
 
