@@ -445,8 +445,11 @@ def _process_one_band(
 
     # Judgment: collect mods
     mods = hooks.JudgmentMods()
+    judg_events: list[str] = []
+    raw_sev = severity
     for m in members:
         ev = hooks.apply_on_judgment(m, mods, incident_name=incident_name)
+        judg_events.extend(ev)
         events.extend(ev)
 
     # Apply judgment-phase anti effects (auto-activate all queued anti cards)
@@ -517,9 +520,11 @@ def _process_one_band(
         num_bands=num_bands,
         incident_name=incident_name,
         incident_severity=effective_severity,
+        raw_severity=raw_sev,
         success=live_success,
         mobilization_gain=mob_gain,
         music_gain=mus_gain,
+        judgment_events=judg_events,
     ))
 
     if not live_success:

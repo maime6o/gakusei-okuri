@@ -1318,6 +1318,17 @@ function lpStep1(res, cur, total) {
 }
 
 function lpStep2(res, cur, total) {
+  const hasJudgEvents = res.judgment_events && res.judgment_events.length > 0;
+  const sevChanged = res.raw_severity !== undefined && res.raw_severity !== res.incident_severity;
+  const sevDisplay = sevChanged
+    ? `<s style="opacity:0.5">${res.raw_severity}</s> → ${res.incident_severity}`
+    : res.incident_severity;
+  const judgeEventsHtml = hasJudgEvents
+    ? `<div class="ability-events" id="lp-ability-events" style="opacity:0;transition:opacity 0.5s">
+         ${res.judgment_events.map(e => `<div class="ability-badge">⚡ ${esc(e)}</div>`).join('')}
+       </div>`
+    : '';
+
   $('main-content').innerHTML = `
     <div class="live-pres">
       <div class="lp-header"><span class="lp-step-label">ステップ 3/4 — 事件めくり</span></div>
@@ -1328,17 +1339,24 @@ function lpStep2(res, cur, total) {
             <div class="flip-card-back">🃏</div>
             <div class="flip-card-front">
               <div class="inc-name">「${esc(res.incident_name)}」</div>
-              <div class="inc-sev">事件性: ${res.incident_severity}</div>
+              <div class="inc-sev">事件性: ${sevDisplay}</div>
             </div>
           </div>
         </div>
       </div>
+      ${judgeEventsHtml}
       ${_lpObserverNote()}
     </div>`;
   setTimeout(() => {
     const inner = document.getElementById('lp-flip-inner');
     if (inner) inner.classList.add('flipped');
   }, 700);
+  if (hasJudgEvents) {
+    setTimeout(() => {
+      const el = document.getElementById('lp-ability-events');
+      if (el) el.style.opacity = '1';
+    }, 1400);
+  }
   _lpToolbar(true, '判定へ →');
 }
 
@@ -1347,7 +1365,19 @@ function lpStep3(res, cur, total) {
   const nextLabel = isLast && !res.success ? '学生課送り指名へ →'
                   : isLast                 ? 'ターン終了'
                   :                          '次のバンドへ →';
-  const cmp = res.judgment_value >= res.incident_severity; // true = success
+  const cmp = res.judgment_value >= res.incident_severity;
+
+  const sevChanged = res.raw_severity !== undefined && res.raw_severity !== res.incident_severity;
+  const sevHtml = sevChanged
+    ? `<s style="opacity:0.45;color:var(--muted)">${res.raw_severity}</s>&nbsp;<b style="font-size:20px">${res.incident_severity}</b>`
+    : `<b style="font-size:20px">${res.incident_severity}</b>`;
+
+  const hasJudgEvents = res.judgment_events && res.judgment_events.length > 0;
+  const judgeEventsHtml = hasJudgEvents
+    ? `<div class="ability-events">
+         ${res.judgment_events.map(e => `<div class="ability-badge">⚡ ${esc(e)}</div>`).join('')}
+       </div>`
+    : '';
 
   const resultHtml = res.success
     ? `<div style="color:var(--success);font-size:22px;font-weight:bold;text-align:center;margin:8px 0">
@@ -1373,9 +1403,10 @@ function lpStep3(res, cur, total) {
       <div class="lp-section" style="text-align:center;font-size:15px">
         対応力&nbsp;<b style="font-size:20px">${res.judgment_value}</b>
         &nbsp;${cmp ? '&ge;' : '&lt;'}&nbsp;
-        事件性&nbsp;<b style="font-size:20px">${res.incident_severity}</b>
+        事件性&nbsp;${sevHtml}
         &nbsp;&nbsp;→&nbsp;&nbsp;<b>${cmp ? '成功' : '事件'}</b>
       </div>
+      ${judgeEventsHtml}
       ${resultHtml}
       ${_lpObserverNote()}
     </div>`;

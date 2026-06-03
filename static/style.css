@@ -9,8 +9,8 @@
   --warn: #ff9800;
   --danger: #f44336;
   --radius: 8px;
-  --card-w: 108px;
-  --card-h: 150px;
+  --card-w: 128px;
+  --card-h: 176px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -341,7 +341,7 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
 .card-member-img {
   width: calc(100% + 8px);
   margin: -4px -4px 5px -4px;
-  height: 88px;
+  height: 108px;
   overflow: hidden;
   border-radius: 6px 6px 0 0;
   background: var(--accent2);
@@ -359,8 +359,9 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
   font-weight: bold;
   line-height: 1.2;
   overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 .card-part {
   font-size: 10px;
@@ -482,6 +483,29 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
 @keyframes popup-slide-in {
   from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* Ability event badges (LP step 2/3) */
+.ability-events {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+.ability-badge {
+  background: rgba(233, 69, 96, 0.15);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 14px;
+  color: #ff8fa3;
+  text-align: center;
+  font-weight: bold;
+  animation: badge-pop 0.3s ease;
+}
+@keyframes badge-pop {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 /* Ability line on hand cards */
@@ -809,8 +833,8 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
 
 /* Responsive */
 @media (max-width: 480px) {
-  :root { --card-w: 90px; --card-h: 126px; }
+  :root { --card-w: 108px; --card-h: 150px; }
   .lobby-wrap { margin: 16px auto; }
-  .card-member-img { height: 60px; }
-  .card-name { font-size: 10px; white-space: normal; }
+  .card-member-img { height: 82px; }
+  .card-name { font-size: 10px; }
 }

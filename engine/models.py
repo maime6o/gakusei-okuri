@@ -73,9 +73,11 @@ class LiveBandResult(BaseModel):
     num_bands: int
     incident_name: str
     incident_severity: int
+    raw_severity: int = 0
     success: bool
     mobilization_gain: int = 0
     music_gain: int = 0
+    judgment_events: List[str] = Field(default_factory=list)
 
 
 class CardInstance(BaseModel):
