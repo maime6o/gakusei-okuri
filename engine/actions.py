@@ -71,6 +71,7 @@ class EndTurnAction(BaseModel):
 class MulliganAction(BaseModel):
     type: Literal["mulligan"] = "mulligan"
     keep: bool = True
+    discard_ids: list[str] = []
 
 
 class ChooseSotaiAction(BaseModel):
@@ -156,8 +157,19 @@ def _handle_mulligan(
     if player.mulligan_done:
         raise ActionError("すでにマリガン済みです")
 
-    if not action.keep:
-        # Return hand to deck, reshuffle, draw 5 again
+    if action.discard_ids:
+        # Selective swap: return only chosen cards, draw same count
+        to_swap = [c for c in player.hand if c.instance_id in action.discard_ids]
+        for c in to_swap:
+            player.hand.remove(c)
+            player.deck.append(c)
+        random.shuffle(player.deck)
+        for _ in range(len(to_swap)):
+            if player.deck:
+                player.hand.append(player.deck.pop())
+        events.append(f"{player.name}: マリガン（{len(to_swap)}枚交換）")
+    elif not action.keep:
+        # Legacy full swap
         player.deck.extend(player.hand)
         player.hand.clear()
         random.shuffle(player.deck)

@@ -483,7 +483,6 @@ function renderMulligan() {
   const me = gs?.players?.find(p => p.player_id === S.myPlayerId);
   if (!me) { $('main-content').innerHTML = '<p style="padding:20px">読み込み中…</p>'; return; }
 
-  // Waiting for someone else
   if (me.mulligan_done) {
     const waiting = gs.players.filter(p => !p.mulligan_done).map(p => p.name).join('、');
     $('main-content').innerHTML = `
@@ -494,25 +493,48 @@ function renderMulligan() {
     return;
   }
 
+  if (!S.mulliganSelected) S.mulliganSelected = new Set();
+  const sel = S.mulliganSelected;
+  const n = sel.size;
+
+  const cardsHtml = me.hand.map(c => {
+    const isSel = sel.has(c.instance_id);
+    return `<div class="card${isSel ? ' selected' : ''}"
+                 onclick="toggleMulliganCard('${c.instance_id}')">
+      ${cardInner(c, {showAbility: true})}
+    </div>`;
+  }).join('');
+
+  const btnLabel = n > 0 ? `選択した ${n}枚を交換` : '全てキープ';
+  const btnClass = n > 0 ? 'btn-primary' : 'btn-secondary';
+
   $('main-content').innerHTML = `
     <div class="lobby-wrap">
       <h2>${esc(me.name)} のマリガン</h2>
-      <div class="card-section">
-        <h3>初期手札（5枚）</h3>
-        <div class="cards-row">${me.hand.map(c => cardHtml(c)).join('')}</div>
-      </div>
-      <div class="card-section">
-        <p>この手札を使いますか？<br>
-           <small style="color:var(--muted)">「引き直し」は手札を全て戻して5枚引き直します（1回限り）</small>
-        </p>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button class="btn btn-primary" style="flex:1"
-                  onclick="sendAction({type:'mulligan',keep:true})">キープ</button>
-          <button class="btn btn-secondary" style="flex:1"
-                  onclick="sendAction({type:'mulligan',keep:false})">引き直し</button>
-        </div>
-      </div>
+      <p style="color:var(--muted);font-size:12px;margin-bottom:8px">
+        交換したいカードをタップして選択（複数可）。選択しない場合はそのままキープ。
+      </p>
+      <div class="cards-row" style="margin-bottom:12px">${cardsHtml}</div>
+      <button class="btn ${btnClass}" style="width:100%" onclick="submitMulligan()">
+        ${btnLabel}
+      </button>
     </div>`;
+}
+
+function toggleMulliganCard(instanceId) {
+  if (!S.mulliganSelected) S.mulliganSelected = new Set();
+  if (S.mulliganSelected.has(instanceId)) {
+    S.mulliganSelected.delete(instanceId);
+  } else {
+    S.mulliganSelected.add(instanceId);
+  }
+  renderMulligan();
+}
+
+function submitMulligan() {
+  const discardIds = S.mulliganSelected ? [...S.mulliganSelected] : [];
+  S.mulliganSelected = null;
+  sendAction({ type: 'mulligan', discard_ids: discardIds });
 }
 
 // ── ゲーム盤面 ─────────────────────────────────────────────────────────────
