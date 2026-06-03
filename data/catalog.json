@@ -617,6 +617,24 @@
         "effect": "draw2"
       },
       "description": "場に出たとき、手札を2枚引く。"
+    },
+    {
+      "id": 41,
+      "name": "べんちゃん",
+      "kind": "member",
+      "part": "Ba",
+      "gender": "male",
+      "draw": 3,
+      "music": 2,
+      "human": 4,
+      "copies": 2,
+      "ability": {
+        "name": "土台固め",
+        "hook": "on_band_stat",
+        "type": "static",
+        "effect": "human+3"
+      },
+      "description": "バンドにいる間、バンドの対応力+3。"
     }
   ],
   "supports": [

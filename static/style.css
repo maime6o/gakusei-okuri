@@ -929,7 +929,8 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
 
 /* ── カタログモーダル ── */
 .catalog-modal {
-  width: min(99vw, 1200px);
+  width: min(99vw, 1200px) !important;
+  max-width: min(99vw, 1200px) !important;
   max-height: 95vh;
   display: flex;
   flex-direction: column;

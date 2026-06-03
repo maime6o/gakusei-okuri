@@ -61,13 +61,13 @@ class TestDeckBuilder:
         builder = FixedDeckBuilder()
         deck = builder.build_player_deck(seed=0)
         # 56 members + 17 supports + 4 antis = 77
-        assert len(deck) == 79, f"Expected 79 cards, got {len(deck)}"
+        assert len(deck) == 81, f"Expected 81 cards, got {len(deck)}"
 
     def test_fixed_deck_has_members(self):
         builder = FixedDeckBuilder()
         deck = builder.build_player_deck()
         members = [c for c in deck if c.kind == CardKind.MEMBER]
-        assert len(members) == 58
+        assert len(members) == 60
 
     def test_fixed_deck_has_supports(self):
         builder = FixedDeckBuilder()
@@ -527,7 +527,7 @@ class TestMemberRoster:
     def test_member_count(self):
         """全メンバー種類34種"""
         from engine.catalog import all_members
-        assert len(all_members()) == 35
+        assert len(all_members()) == 36
 
     def test_ability_members_have_abilities(self):
         """アビリティ持ちメンバーは ability != None"""
