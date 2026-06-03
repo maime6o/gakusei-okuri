@@ -1051,6 +1051,10 @@ function effectToJa(effect) {
   }
   if (effect.startsWith('mobilization_transfer+'))
     return `動員数+${effect.split('+')[1]}`;
+  if (effect.startsWith('mobilization+') && effect.endsWith('_once')) {
+    const n = effect.split('+')[1].split('_')[0];
+    return `初回のみ: 動員数+${n}`;
+  }
   if (effect.startsWith('opponents_mobilization-'))
     return `相手全員の動員数-${effect.split('-')[1]}`;
   return effect

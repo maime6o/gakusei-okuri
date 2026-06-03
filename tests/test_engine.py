@@ -654,84 +654,140 @@ class TestNewAbilities:
         assert len(state.players[0].hand) == hand_before - 1 + 1
         assert any("即興演奏" in e for e in events)
 
-    # --- newly added abilities ---
+    # --- newly redesigned abilities (gimmick focus) ---
 
-    def test_keisuke_band_stat_draw_and_human(self):
-        """id=1 けーすけ: バンドの要 → draw+1, human+1"""
-        from engine import hooks
+    def test_keisuke_on_play_draws_two(self):
+        """id=1 けーすけ: 人脈 → on_play draw2"""
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
         inst = self._inst(1)
-        d, m, h = hooks.apply_on_band_stat(inst, 5, 5, 5)
-        assert d == 6
-        assert h == 6
+        alice.hand.append(inst)
+        hand_before = len(alice.hand)
+        state, events = apply_action(state, alice.player_id, PlayMemberAction(card_instance_id=inst.instance_id))
+        # played 1 out, drew 2 back → net +1
+        assert len(state.players[0].hand) == hand_before - 1 + 2
+        assert any("人脈" in e for e in events)
 
-    def test_tatsube_gitarist_no_pride_success_draw(self):
-        """id=2 たつぼー: ギタリストの意地 → success_draw+2"""
-        from engine import hooks
+    def test_tatsube_on_play_reduces_opponent_record(self):
+        """id=2 たつぼー: プレッシャー → on_play opponents_record-1"""
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
+        bob = state.players[1]
+        bob.performance_record = 5
         inst = self._inst(2)
-        mods = hooks.JudgmentMods()
-        hooks.apply_on_judgment(inst, mods)
-        assert mods.success_draw_bonus == 2
+        alice.hand.append(inst)
+        state, events = apply_action(state, alice.player_id, PlayMemberAction(card_instance_id=inst.instance_id))
+        assert state.players[1].performance_record == 4
+        assert any("プレッシャー" in e for e in events)
 
-    def test_naganagase_music_boost(self):
-        """id=3 ながながせ: 楽曲担当 → music+2"""
-        from engine import hooks
+    def test_naganagase_on_play_recruits_from_deck(self):
+        """id=3 ながながせ: スカウト → on_play recruit_from_deck"""
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
+        deck_before = len(alice.deck)
         inst = self._inst(3)
-        d, m, h = hooks.apply_on_band_stat(inst, 5, 5, 5)
-        assert m == 7
+        alice.hand.append(inst)
+        state, events = apply_action(state, alice.player_id, PlayMemberAction(card_instance_id=inst.instance_id))
+        # deck shrinks by 1 (recruited to field or band)
+        alice2 = state.players[0]
+        assert len(alice2.deck) == deck_before - 1
+        assert any("スカウト" in e for e in events)
 
-    def test_kame_judgment_human_delta(self):
-        """id=6 かめ: 亀の粘り → human+2 in judgment"""
-        from engine import hooks
+    def test_kame_on_form_recruits_from_deck(self):
+        """id=6 かめ: 守りのリズム → on_form recruit_from_deck"""
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
         inst = self._inst(6)
-        mods = hooks.JudgmentMods()
-        hooks.apply_on_judgment(inst, mods)
-        assert mods.human_delta == 2
+        _inject_members(alice, count=2, draw=3, music=2, human=2)
+        alice.field_members.append(inst)
+        deck_before = len(alice.deck)
+        ids = [m.instance_id for m in alice.field_members]
+        state, events = apply_action(state, alice.player_id, FormBandAction(member_instance_ids=ids))
+        alice2 = state.players[0]
+        # deck shrinks by 1 and band gains an extra member
+        assert len(alice2.deck) == deck_before - 1
+        assert any(len(b.members) == 4 for b in alice2.bands)
+        assert any("守りのリズム" in e for e in events)
 
-    def test_ohana_band_stat_draw_and_human(self):
-        """id=7 おはなさん: ビートの女王 → draw+2, human+1"""
-        from engine import hooks
+    def test_ohana_on_play_sets_free_member(self):
+        """id=7 おはなさん: ドラムで誘う → on_play free_play_member"""
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
         inst = self._inst(7)
-        d, m, h = hooks.apply_on_band_stat(inst, 5, 5, 5)
-        assert d == 7
-        assert h == 6
+        alice.hand.append(inst)
+        state, events = apply_action(state, alice.player_id, PlayMemberAction(card_instance_id=inst.instance_id))
+        assert state.players[0].free_member_play is True
+        assert any("ドラムで誘う" in e for e in events)
 
-    def test_sama_d_charisma_draw_boost(self):
-        """id=8 さまD: カリスマ性 → draw+3"""
-        from engine import hooks
+    def test_sama_d_on_play_mobilization_once(self):
+        """id=8 さまD: 伝説の一夜 → on_play mobilization+10_once (fires once)"""
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
+        mob_before = alice.cumulative_mobilization
         inst = self._inst(8)
-        d, m, h = hooks.apply_on_band_stat(inst, 5, 5, 5)
-        assert d == 8
+        alice.hand.append(inst)
+        state, events = apply_action(state, alice.player_id, PlayMemberAction(card_instance_id=inst.instance_id))
+        assert state.players[0].cumulative_mobilization == mob_before + 10
+        assert any("伝説の一夜" in e for e in events)
+        # used_once flag is set on the copy in field_members
+        inst2 = next(m for m in state.players[0].field_members if m.catalog_id == "member_8")
+        assert inst2.used_once is True
 
     def test_sora_severity_reduction(self):
-        """id=9 そらさん: ピンチに強い → severity-2"""
+        """id=9 そらさん: ピンチに強い → severity-2 (maintained)"""
         from engine import hooks
         inst = self._inst(9)
         mods = hooks.JudgmentMods()
         hooks.apply_on_judgment(inst, mods)
         assert mods.severity_delta == -2
 
-    def test_shoishoi_draw_boost(self):
-        """id=13 しょいしょい: ノリの良さ → draw+2"""
-        from engine import hooks
+    def test_shoishoi_on_play_action_plus_one(self):
+        """id=13 しょいしょい: 場のテンション → on_play action+1"""
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        actions_before = state.actions_remaining
+        alice = state.players[0]
         inst = self._inst(13)
-        d, m, h = hooks.apply_on_band_stat(inst, 5, 5, 5)
-        assert d == 7
+        alice.hand.append(inst)
+        state, events = apply_action(state, alice.player_id, PlayMemberAction(card_instance_id=inst.instance_id))
+        # cost 1 action, ability adds 1 → net unchanged
+        assert state.actions_remaining == actions_before
+        assert any("場のテンション" in e for e in events)
 
-    def test_shio_judgment_human_delta(self):
-        """id=15 しおちゃん: 静かなる力 → human+3 in judgment"""
-        from engine import hooks
+    def test_shio_on_form_recruits_from_deck(self):
+        """id=15 しおちゃん: 静かな勧誘 → on_form recruit_from_deck"""
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
         inst = self._inst(15)
-        mods = hooks.JudgmentMods()
-        hooks.apply_on_judgment(inst, mods)
-        assert mods.human_delta == 3
+        _inject_members(alice, count=2, draw=3, music=2, human=2)
+        alice.field_members.append(inst)
+        deck_before = len(alice.deck)
+        ids = [m.instance_id for m in alice.field_members]
+        state, events = apply_action(state, alice.player_id, FormBandAction(member_instance_ids=ids))
+        alice2 = state.players[0]
+        assert len(alice2.deck) == deck_before - 1
+        assert any(len(b.members) == 4 for b in alice2.bands)
+        assert any("静かな勧誘" in e for e in events)
 
-    def test_ucchi_success_draw_bonus(self):
-        """id=16 うっちー: ライブ映え → success_draw+2"""
-        from engine import hooks
+    def test_ucchi_on_play_drains_opponent_mobilization(self):
+        """id=16 うっちー: 観客煽り → on_play opponents_mobilization-5"""
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
+        bob = state.players[1]
+        bob.cumulative_mobilization = 20
         inst = self._inst(16)
-        mods = hooks.JudgmentMods()
-        hooks.apply_on_judgment(inst, mods)
-        assert mods.success_draw_bonus == 2
+        alice.hand.append(inst)
+        state, events = apply_action(state, alice.player_id, PlayMemberAction(card_instance_id=inst.instance_id))
+        assert state.players[1].cumulative_mobilization == 15
+        assert any("観客煽り" in e for e in events)
 
 
 # ---------------------------------------------------------------------------

@@ -169,6 +169,23 @@ def apply_on_play(
             p.hand.append(token)
         events.append(f"{member.name}の「{ab.name}」: 全プレイヤーの手札に「{token_name}」を追加")
 
+    elif effect == "draw2":
+        _draw_cards(player, 2)
+        events.append(f"{member.name}の「{ab.name}」: 2枚ドロー")
+
+    elif effect == "free_play_member":
+        player.free_member_play = True
+        events.append(f"{member.name}の「{ab.name}」: 次のメンバーをコスト0でプレイ可能")
+
+    elif effect.startswith("opponents_mobilization-"):
+        n = int(effect[len("opponents_mobilization-"):])
+        names = []
+        for p in state.players:
+            if p.player_id != player.player_id:
+                p.cumulative_mobilization = max(0, p.cumulative_mobilization - n)
+                names.append(p.name)
+        events.append(f"{member.name}の「{ab.name}」: {', '.join(names)} の動員数-{n}")
+
     elif effect.startswith("mobilization+") and effect.endswith("_once"):
         if not member.used_once:
             n = int(effect.split("+")[1].split("_")[0])
@@ -197,6 +214,26 @@ def apply_on_form(
     if ab.effect == "action+1":
         state.actions_remaining += 1
         events.append(f"{member.name}の「{ab.name}」: 行動+1")
+
+    elif ab.effect == "recruit_from_deck":
+        import random
+        player = state.current_player
+        candidates = [c for c in player.deck if c.kind == "member"]
+        if candidates:
+            picked = random.choice(candidates)
+            player.deck.remove(picked)
+            target_band = next(
+                (b for b in player.bands if any(m.instance_id == member.instance_id for m in b.members)),
+                None,
+            )
+            if target_band:
+                target_band.members.append(picked)
+                events.append(f"{member.name}の「{ab.name}」: デッキから「{picked.name}」をバンドに追加")
+            else:
+                player.field_members.append(picked)
+                events.append(f"{member.name}の「{ab.name}」: デッキから「{picked.name}」をフィールドへ追加")
+        else:
+            events.append(f"{member.name}の「{ab.name}」: デッキにメンバーなし")
 
     return events
 
