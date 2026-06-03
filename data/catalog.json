@@ -599,6 +599,24 @@
         "effect": "opponents_record-1"
       },
       "description": "場に出たとき、相手全員の活動実績-1。"
+    },
+    {
+      "id": 40,
+      "name": "きたざわ",
+      "kind": "member",
+      "part": "Ba",
+      "gender": "female",
+      "draw": 3,
+      "music": 2,
+      "human": 3,
+      "copies": 2,
+      "ability": {
+        "name": "つながり",
+        "hook": "on_play",
+        "type": "on_play",
+        "effect": "draw2"
+      },
+      "description": "場に出たとき、手札を2枚引く。"
     }
   ],
   "supports": [
@@ -625,7 +643,7 @@
       "description": "このターン、自分のすべてのバンドの音楽性+4。"
     },
     {
-      "name": "ビラ配り",
+      "name": "わっちゃん祭り",
       "kind": "support",
       "phase": "action",
       "effect": "use_random_supports+2",
