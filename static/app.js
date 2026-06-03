@@ -1061,7 +1061,30 @@ function onSetAnti() {
 }
 
 function revealAnti(instanceId) {
-  sendAction({ type: 'reveal_anti', card_instance_id: instanceId });
+  const gs = S.gameState;
+  const opponents = gs.players.filter(p => p.player_id !== S.myPlayerId);
+  if (opponents.length === 1) {
+    sendAction({ type: 'reveal_anti', card_instance_id: instanceId, target_player_id: opponents[0].player_id });
+    return;
+  }
+  // 3人以上: ターゲット選択モーダル
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.style.display = 'flex';
+  const btns = opponents.map(op =>
+    `<button class="btn btn-primary" style="width:100%"
+             onclick="this.closest('.modal-overlay').remove();
+                      sendAction({type:'reveal_anti',card_instance_id:'${instanceId}',target_player_id:'${op.player_id}'})">
+       ${esc(op.name)}
+     </button>`
+  ).join('');
+  overlay.innerHTML = `<div class="modal">
+    <h3>🎯 アンチ発動対象を選択</h3>
+    ${btns}
+    <button class="btn btn-secondary" style="width:100%" onclick="this.closest('.modal-overlay').remove()">キャンセル</button>
+  </div>`;
+  document.body.appendChild(overlay);
+}
 }
 
 // ── カード詳細モーダル ──────────────────────────────────────────────────────
