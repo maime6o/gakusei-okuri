@@ -124,21 +124,21 @@ def apply_on_play(
             events.append(f"{member.name}の「{ab.name}」: デッキにメンバーなし")
 
     elif effect == "purge_opponent_males":
-        removed = []
-        for p in state.players:
-            if p.player_id == player.player_id:
-                continue
-            for band in list(p.bands):
-                males = [m for m in band.members if m.gender == "male"]
-                for m_card in males:
-                    band.members.remove(m_card)
-                    removed.append(m_card.name)
-                if not band.members:
-                    p.bands.remove(band)
-        events.append(
-            f"{member.name}の「{ab.name}」: {', '.join(removed)} を学生課送り"
-            if removed else f"{member.name}の「{ab.name}」: 対象なし"
-        )
+        import random as _rnd
+        candidates = [
+            (p, band, m)
+            for p in state.players if p.player_id != player.player_id
+            for band in p.bands
+            for m in band.members if m.gender == "male"
+        ]
+        if candidates:
+            target_p, target_band, target_m = _rnd.choice(candidates)
+            target_band.members.remove(target_m)
+            if not target_band.members:
+                target_p.bands.remove(target_band)
+            events.append(f"{member.name}の「{ab.name}」: {target_m.name} を学生課送り")
+        else:
+            events.append(f"{member.name}の「{ab.name}」: 対象なし")
 
     elif effect == "draw_per_opponent_female":
         count = sum(

@@ -103,9 +103,10 @@ def apply_action(
 ) -> tuple[GameState, list[str]]:
     """Return (new_state, events). Never mutates state."""
     s = state.model_copy(deep=True)
-    # Clear stale live results and taiban result on every action.
+    # Clear stale transient fields on every action.
     s.last_live_results = []
     s.taiban_result = None
+    s.last_action_events = []
     events: list[str] = []
 
     if isinstance(action, MulliganAction):
@@ -831,7 +832,8 @@ def _apply_support_effect_action(
             target_p, stolen_band = random.choice(candidates)
             target_p.bands.remove(stolen_band)
             player.bands.append(stolen_band)
-            events.append(f"「{card.name}」: {target_p.name}のバンドを転売！")
+            target_p.cumulative_mobilization += 20
+            events.append(f"「{card.name}」: {target_p.name}のバンドを転売！（{target_p.name}に動員+20の補償）")
         else:
             events.append(f"「{card.name}」: 対象バンドなし")
     elif effect == "mobilization_transfer+15":
@@ -849,15 +851,20 @@ def _apply_support_effect_action(
                 p.cumulative_mobilization = max(0, p.cumulative_mobilization - 5)
                 events.append(f"「{card.name}」: {p.name}の動員数 {before} → {p.cumulative_mobilization}")
     elif effect == "purge_band_females":
+        candidates = [
+            (p, band, m)
+            for p in s.players
+            for band in p.bands
+            for m in band.members if m.gender == "female"
+        ]
+        picked = random.sample(candidates, min(2, len(candidates)))
         removed = []
-        for p in s.players:
-            for band in list(p.bands):
-                females = [m for m in band.members if m.gender == "female"]
-                for f in females:
-                    band.members.remove(f)
-                    removed.append(f"{p.name}の「{f.name}」")
-                if not band.members:
-                    p.bands.remove(band)
+        for (target_p, target_band, target_m) in picked:
+            if target_m in target_band.members:
+                target_band.members.remove(target_m)
+                removed.append(f"{target_p.name}の「{target_m.name}」")
+                if not target_band.members and target_band in target_p.bands:
+                    target_p.bands.remove(target_band)
         events.append(
             f"「{card.name}」: {', '.join(removed)} を学生課送り"
             if removed else f"「{card.name}」: 対象なし"

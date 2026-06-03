@@ -636,9 +636,10 @@ function renderGame() {
       <div class="section-title">手札（${me.hand.length}枚）</div>
       <div class="cards-row">
         ${(me.hand || []).map(c => cardHtml(c, {
-          selectable: isMyTurn,
-          selected:   S.sel.includes(c.instance_id),
-          disabled:   c.kind === 'member' && c.music > me.performance_record,
+          selectable:  isMyTurn,
+          selected:    S.sel.includes(c.instance_id),
+          disabled:    c.kind === 'member' && c.music > me.performance_record,
+          showAbility: true,
         })).join('')}
       </div>
     </div>`;
@@ -900,6 +901,17 @@ function openTaibanModal() {
   document.body.appendChild(overlay);
 }
 
+function showActionPopup(events) {
+  const existing = document.querySelector('.action-popup');
+  if (existing) existing.remove();
+  const el = document.createElement('div');
+  el.className = 'action-popup';
+  el.innerHTML = events.map(e => `<div>${esc(e)}</div>`).join('');
+  document.body.appendChild(el);
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.remove(), 3800);
+}
+
 function showTaibanResultPopup(result) {
   const win = result.result === 'win';
   const overlay = document.createElement('div');
@@ -934,11 +946,11 @@ function cardHtml(c, opts = {}) {
   return `<div class="${cls}" ${onclick} ${hov} title="${esc(c.name||'')}">
     ${c.face_down
       ? `<div class="card-name" style="margin:auto;font-size:16px">🂠</div>`
-      : cardInner(c)}
+      : cardInner(c, opts)}
   </div>`;
 }
 
-function cardInner(c) {
+function cardInner(c, opts = {}) {
   if (c?.instance_id) _cardCache[c.instance_id] = c;
   const infoBtn = c?.instance_id
     ? `<span class="card-info-btn"
@@ -958,12 +970,16 @@ function cardInner(c) {
     : c.severity != null
       ? `<span class="card-stat" style="color:var(--danger)">事件性 ${c.severity}</span>`
       : `<div class="card-desc-preview">${esc(c.description || effectToJa(c.effect) || '')}</div>`;
+  const abilityLine = opts.showAbility && c.ability
+    ? `<div class="card-ability-line">⚡${esc(c.ability.name)}: ${esc(effectToJa(c.ability.effect))}</div>`
+    : '';
   return `
     ${infoBtn}
     ${imgHtml}
     <div class="card-name">${esc(c.name||'')}</div>
     <div class="card-part">${esc(kindLabel)}</div>
-    <div class="card-stats">${statsContent}</div>`;
+    <div class="card-stats">${statsContent}</div>
+    ${abilityLine}`;
 }
 
 // ── アクション ─────────────────────────────────────────────────────────────
@@ -1030,14 +1046,14 @@ function effectToJa(effect) {
     'opponents_record-1':       '相手全員の活動実績-1',
     'opponents_record-3':       '相手全員の活動実績-3',
     'recruit_from_deck':        'デッキからメンバーを1人バンドへ加える',
-    'purge_opponent_males':     '相手バンドの男性メンバーを全員除外',
+    'purge_opponent_males':     '相手バンドの男性メンバー1名を除外',
     'draw_per_opponent_female': '相手バンドの女性1人につき集客力+1',
     'free_play_member':         '次のメンバー1枚のコスト0',
     'redraw_hand':              '手札を全て引き直す',
     'encore':                   '最初に成功したバンドが追加ライブ',
     'force_live_success':       'このターンのライブは必ず成功',
     'steal_random_band':        '相手バンドを1つ奪い自フィールドへ',
-    'purge_band_females':       '全バンドの女性メンバーを学生課送り',
+    'purge_band_females':       '全バンドの女性メンバー2名を学生課送り',
     'zero_music_deck_hand':     '自分のデッキ・手札メンバーの音楽性を0に',
     'poach_random_member':      '相手バンドを解散、メンバー1人を自バンドへ引き抜く',
     'draw2':                    '手札を2枚引く',
@@ -1510,6 +1526,13 @@ function onStateUpdate(gs) {
 
   if (gs.taiban_result) {
     showTaibanResultPopup(gs.taiban_result);
+  }
+
+  // アクションポップアップ（全プレイヤーに表示）
+  const evLen = (gs.event_log || []).length;
+  if (gs.last_action_events?.length > 0 && evLen !== (S.lastPopupLogLen || 0)) {
+    S.lastPopupLogLen = evLen;
+    showActionPopup(gs.last_action_events);
   }
 
   if (S.mode === 'hotseat') {

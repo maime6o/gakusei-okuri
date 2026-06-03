@@ -204,6 +204,10 @@ async def _handle_message(ws: WebSocket, room: Any, player_name: str, raw: str):
         new_state, events = apply_action(room.state, player_id, action)
         room.state = new_state
         room.state.event_log.extend(events)
+        _POPUP_KEYS = ('場に出した', 'サポート「', 'アンチ「', 'の「', '転売', '学生課送り')
+        room.state.last_action_events = [
+            e for e in events if any(k in e for k in _POPUP_KEYS)
+        ][:4]
         await _broadcast(room)
     except ActionError as e:
         await ws.send_json({"type": "error", "message": str(e)})

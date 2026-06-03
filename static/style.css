@@ -461,6 +461,41 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
 }
 .toast.show { opacity: 1; }
 
+/* Action popup */
+.action-popup {
+  position: fixed;
+  top: 68px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 52, 96, 0.96);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 10px 16px;
+  max-width: 300px;
+  width: max-content;
+  z-index: 300;
+  font-size: 12px;
+  line-height: 1.6;
+  pointer-events: none;
+  animation: popup-slide-in 0.2s ease;
+}
+@keyframes popup-slide-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* Ability line on hand cards */
+.card-ability-line {
+  font-size: 9px;
+  color: #ffd54f;
+  margin-top: 3px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
 /* Error banner */
 .error-banner {
   background: var(--danger);

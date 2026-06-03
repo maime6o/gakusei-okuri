@@ -165,6 +165,7 @@ class GameState(BaseModel):
     pending_band_processes: List[PendingProcess] = Field(default_factory=list)
     last_live_results: List[LiveBandResult] = Field(default_factory=list)
     taiban_result: Optional[dict] = None
+    last_action_events: List[str] = Field(default_factory=list)
 
     @property
     def current_player(self) -> PlayerState:
