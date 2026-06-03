@@ -997,7 +997,7 @@ async function showCatalogModal() {
   overlay.className = 'modal-overlay';
   overlay.style.display = 'flex';
   overlay.innerHTML = `
-    <div class="modal catalog-modal">
+    <div class="catalog-modal">
       <div class="catalog-header">
         <h2 style="margin:0">📋 カード一覧</h2>
         <button class="btn btn-sm" onclick="this.closest('.modal-overlay').remove()">✕ 閉じる</button>

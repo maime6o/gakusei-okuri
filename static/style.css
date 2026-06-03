@@ -929,12 +929,12 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
 
 /* ── カタログモーダル ── */
 .catalog-modal {
-  width: min(99vw, 1200px) !important;
-  max-width: min(99vw, 1200px) !important;
-  max-height: 95vh;
+  background: var(--surface);
+  border-radius: var(--radius);
+  width: min(98vw, 1200px);
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
-  padding: 0;
   overflow: hidden;
 }
 .catalog-header {
