@@ -938,6 +938,20 @@ function openTaibanModal() {
   document.body.appendChild(overlay);
 }
 
+function showMyTurnNotification() {
+  const existing = document.getElementById('my-turn-notif');
+  if (existing) existing.remove();
+  const el = document.createElement('div');
+  el.id = 'my-turn-notif';
+  el.innerHTML = `<div class="my-turn-inner">
+    <div class="my-turn-label">🎸 あなたのターンです！</div>
+    <div class="my-turn-sub">タップして閉じる</div>
+  </div>`;
+  el.onclick = () => el.remove();
+  document.body.appendChild(el);
+  setTimeout(() => { if (el.parentNode) el.remove(); }, 3000);
+}
+
 function showActionPopup(events) {
   const existing = document.querySelector('.action-popup');
   if (existing) existing.remove();
@@ -1623,6 +1637,15 @@ function onStateUpdate(gs) {
 
   if (gs.taiban_result) {
     showTaibanResultPopup(gs.taiban_result);
+  }
+
+  // 自分のターンになった瞬間を検出して通知
+  const prevIsMyTurn = prevGs?.phase === 'action'
+    && prevGs?.players?.[prevGs?.current_player_idx]?.player_id === S.myPlayerId;
+  const nowIsMyTurn = gs.phase === 'action'
+    && gs.players?.[gs.current_player_idx]?.player_id === S.myPlayerId;
+  if (!prevIsMyTurn && nowIsMyTurn) {
+    showMyTurnNotification();
   }
 
   // アクションポップアップ（全プレイヤーに表示）
