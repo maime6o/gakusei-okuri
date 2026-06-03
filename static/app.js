@@ -46,7 +46,7 @@ const BGM = {
     game:  new Audio('/sounds/bgm_game.mp3'),
   },
   current:  null,
-  muted:    false,
+  muted:    true,
   unlocked: false,
   volume:   0.3,
 };
