@@ -958,9 +958,7 @@ async function showCatalogModal() {
   }
 
   function cardBlock(c) {
-    const partKey = (c.part || '').replace('/', '');
-    const imgSrc = c.kind === 'member' && partKey && c.gender
-      ? `/images/members/${partKey}_${c.gender}.png` : null;
+    const imgSrc = memberImagePath(c);
     const imgHtml = imgSrc
       ? `<img src="${imgSrc}" alt="" loading="lazy" onerror="this.style.display='none'">` : '';
     const abilityName = c.ability?.name ? `【${c.ability.name}】` : '';
@@ -1314,6 +1312,8 @@ function revealAnti(instanceId) {
 // ── カード詳細モーダル ──────────────────────────────────────────────────────
 
 function memberImagePath(c) {
+  if (c.kind === 'support') return '/images/support.png';
+  if (c.kind === 'anti')    return '/images/anti.png';
   if (c.kind !== 'member' || !c.part || !c.gender) return null;
   const partKey = c.part.replace('/', '');
   return `/images/members/${partKey}_${c.gender}.png`;
