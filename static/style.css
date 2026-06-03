@@ -39,64 +39,125 @@ header h1 { font-size: 18px; color: var(--accent); }
 main { flex: 1; padding: 12px; overflow-y: auto; }
 
 /* ── Lobby ── */
+/* 狭いラッパー（ホットシート設定・待機室・ハンドオフ等） */
 .lobby-wrap {
-  max-width: 460px;
-  margin: 24px auto;
+  max-width: 500px;
+  margin: 20px auto;
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
+/* ロビー本体（ルールブック＋プレイボタン 2カラム） */
+.lobby-wide {
+  max-width: 980px;
+  margin: 20px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 0 8px;
+}
+
 /* Hero banner */
 .lobby-hero {
-  background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 50%, #3d0d2b 100%);
+  background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 45%, #3d0d2b 100%);
   border: 1px solid var(--accent);
   border-radius: var(--radius);
-  padding: 24px 16px 16px;
-  text-align: center;
+  padding: 20px 20px 16px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 16px;
 }
+.lobby-hero-text { display: flex; flex-direction: column; gap: 6px; }
 .lobby-hero-title {
-  font-size: 22px;
+  font-size: 26px;
   font-weight: bold;
   color: var(--accent);
   letter-spacing: 1px;
 }
 .lobby-hero-sub {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
-  margin-top: 4px;
-  margin-bottom: 12px;
 }
 
 .lobby-title-img {
+  max-height: 120px;
+  max-width: 280px;
   width: 100%;
-  max-height: 160px;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: var(--radius);
   display: block;
 }
 .lobby-title-img-wrap {
-  width: 100%;
   border-radius: var(--radius);
   overflow: hidden;
-  min-height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+/* 2-column grid for main content */
+.lobby-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 14px;
+  align-items: start;
+}
+.lobby-left  { display: flex; flex-direction: column; gap: 14px; }
+.lobby-right { display: flex; flex-direction: column; gap: 14px; }
+
 /* Rulebook */
 .rulebook {
   font-size: 13px;
-  line-height: 1.7;
+  line-height: 1.75;
   color: var(--text);
 }
 .rulebook h4 {
   color: var(--accent);
   font-size: 13px;
-  margin: 10px 0 4px;
+  margin: 12px 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 .rulebook h4:first-child { margin-top: 0; }
+.rulebook .rule-indent {
+  padding-left: 12px;
+  border-left: 2px solid var(--accent2);
+  margin: 4px 0 8px;
+  color: #ccc;
+}
+.rulebook .rule-example {
+  background: var(--bg);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: var(--muted);
+  margin: 2px 0;
+}
+
+/* Glossary */
+.glossary { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+.gloss-item { display: flex; flex-direction: column; gap: 2px; }
+.gloss-term { font-weight: bold; color: var(--accent); font-size: 13px; }
+.gloss-desc { color: #ccc; font-size: 12px; line-height: 1.6; padding-left: 8px; }
+
+/* Turn flow chips */
+.turn-flow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0;
+}
+.turn-step {
+  background: var(--accent2);
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.turn-step.highlight { background: var(--accent); color: #fff; }
 
 /* Band bonus table */
 .band-bonus-table {
@@ -110,32 +171,20 @@ main { flex: 1; padding: 12px; overflow-y: auto; }
   gap: 8px;
   background: var(--bg);
   border-radius: 6px;
-  padding: 6px 10px;
+  padding: 7px 10px;
   font-size: 12px;
 }
 .bbt-name {
   font-weight: bold;
   color: var(--accent);
-  min-width: 120px;
+  min-width: 130px;
 }
-.bbt-cond {
-  color: var(--muted);
-  flex: 1;
-}
-.bbt-bonus {
-  color: #81c784;
-  font-weight: bold;
-  white-space: nowrap;
-}
+.bbt-cond { color: var(--muted); flex: 1; }
+.bbt-bonus { color: #81c784; font-weight: bold; white-space: nowrap; }
 
 /* Play section */
-.lobby-play-section {
-  border: 2px solid var(--accent);
-}
-.btn-lg {
-  padding: 14px 24px;
-  font-size: 16px;
-}
+.lobby-play-section { border: 2px solid var(--accent); }
+.btn-lg { padding: 14px 24px; font-size: 16px; }
 
 /* Online subsections */
 .online-subsection {
@@ -151,6 +200,13 @@ main { flex: 1; padding: 12px; overflow-y: auto; }
   font-weight: bold;
   color: var(--accent);
   margin-bottom: 2px;
+}
+
+@media (max-width: 700px) {
+  .lobby-grid { grid-template-columns: 1fr; }
+  .lobby-hero { grid-template-columns: 1fr; }
+  .lobby-hero-title { font-size: 20px; }
+  .lobby-title-img { max-width: 100%; max-height: 140px; }
 }
 
 .card-section {
@@ -501,8 +557,8 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
   line-height: 1.5;
 }
 
-/* ハンドオフ画面 */
-.lobby-wrap { display: flex; flex-direction: column; gap: 16px; }
+/* ハンドオフ画面（lobby-wrap の狭い版） */
+.handoff-wrap { display: flex; flex-direction: column; gap: 16px; max-width: 460px; margin: 0 auto; }
 
 /* アクティブプレイヤー名を強調 */
 .active-player {
