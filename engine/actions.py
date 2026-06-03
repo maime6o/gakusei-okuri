@@ -59,9 +59,10 @@ class SetAntiAction(BaseModel):
 
 
 class RevealAntiAction(BaseModel):
-    """Opponent reveals a face-down anti card during the active player's turn."""
+    """Opponent reveals a face-down anti card and designates a target player."""
     type: Literal["reveal_anti"] = "reveal_anti"
     card_instance_id: str
+    target_player_id: str
 
 
 class EndTurnAction(BaseModel):
@@ -326,7 +327,7 @@ def _handle_set_anti(
 def _handle_reveal_anti(
     s: GameState, player_id: str, action: RevealAntiAction, events: list[str]
 ) -> tuple[GameState, list[str]]:
-    """Opponent reveals an anti card during active player's live/judgment phase."""
+    """Opponent reveals an anti card and designates which player to target."""
     if s.phase not in (Phase.ACTION, Phase.LIVE_PROCESSING):
         raise ActionError("アンチカードを公開できるフェーズではありません")
     revealer = _get_player(s, player_id)
@@ -340,11 +341,16 @@ def _handle_reveal_anti(
     if not card:
         raise ActionError("アンチゾーンにそのカードが見つかりません")
 
+    target = s.player_by_id(action.target_player_id)
+    if not target:
+        raise ActionError("対象プレイヤーが見つかりません")
+    if target.player_id == revealer.player_id:
+        raise ActionError("自分をアンチの対象にはできません")
+
     card.face_down = False
-    revealer.anti_zone.remove(card)
-    revealer.discard.append(card)
-    # Effects are applied during live/judgment processing; record it in log
-    events.append(f"{revealer.name}: アンチ「{card.name}」を公開")
+    card.anti_target_id = action.target_player_id
+    # カードは anti_zone に残し、対象のライブ処理時に効果を適用してから捨て札へ
+    events.append(f"{revealer.name}: アンチ「{card.name}」を公開 → {target.name} に発動予約")
     return s, events
 
 
@@ -464,18 +470,22 @@ def _process_one_band(
         judg_events.extend(ev)
         events.extend(ev)
 
-    # Apply judgment-phase anti effects (auto-activate all queued anti cards)
+    # Apply judgment-phase anti effects
     for opponent in s.players:
         if opponent.player_id == player.player_id:
             continue
         for anti in list(opponent.anti_zone):
-            if anti.phase == "judgment":
-                delta = _parse_anti_effect(anti.effect or "")
-                mods.human_delta += delta.get("human", 0)
-                mods.severity_delta += delta.get("severity", 0)
-                events.append(f"{opponent.name}のアンチ「{anti.name}」発動！")
-                opponent.anti_zone.remove(anti)
-                opponent.discard.append(anti)
+            if anti.phase != "judgment":
+                continue
+            targets_me = anti.face_down or anti.anti_target_id == player.player_id
+            if not targets_me:
+                continue
+            delta = _parse_anti_effect(anti.effect or "")
+            mods.human_delta += delta.get("human", 0)
+            mods.severity_delta += delta.get("severity", 0)
+            events.append(f"{opponent.name}のアンチ「{anti.name}」発動！")
+            opponent.anti_zone.remove(anti)
+            opponent.discard.append(anti)
 
     # 自己除外メンバーをバンドから取り除く（たうっつぃー等）
     for remove_id in mods.self_remove_ids:
@@ -944,16 +954,20 @@ def _apply_live_effects(
         if opponent.player_id == player.player_id:
             continue
         for anti in list(opponent.anti_zone):
-            if anti.phase == "live":
-                delta = _parse_anti_effect(anti.effect or "")
-                draw += delta.get("draw", 0)
-                music += delta.get("music", 0)
-                events.append(
-                    f"{opponent.name}のアンチ「{anti.name}」発動！"
-                    f" 集客力{delta.get('draw', 0):+d} 音楽性{delta.get('music', 0):+d}"
-                )
-                opponent.anti_zone.remove(anti)
-                opponent.discard.append(anti)
+            if anti.phase != "live":
+                continue
+            targets_me = anti.face_down or anti.anti_target_id == player.player_id
+            if not targets_me:
+                continue
+            delta = _parse_anti_effect(anti.effect or "")
+            draw += delta.get("draw", 0)
+            music += delta.get("music", 0)
+            events.append(
+                f"{opponent.name}のアンチ「{anti.name}」発動！"
+                f" 集客力{delta.get('draw', 0):+d} 音楽性{delta.get('music', 0):+d}"
+            )
+            opponent.anti_zone.remove(anti)
+            opponent.discard.append(anti)
     return draw, music, human
 
 
