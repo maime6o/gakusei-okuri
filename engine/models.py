@@ -97,6 +97,7 @@ class CardInstance(BaseModel):
     description: Optional[str] = None
     face_down: bool = False
     used_once: bool = False
+    anti_target_id: Optional[str] = None
 
 
 class Band(BaseModel):
