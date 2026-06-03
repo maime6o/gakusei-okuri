@@ -338,6 +338,20 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
 .card.disabled { opacity: 0.4; cursor: not-allowed; }
 .card.face-down { background: var(--accent2); }
 
+.card.card-lg {
+  width: 148px;
+  height: 202px;
+}
+.card.card-lg .card-member-img { height: 128px; }
+
+.card.card-sm {
+  width: 92px;
+  height: 130px;
+}
+.card.card-sm .card-member-img { height: 70px; }
+.card.card-sm .card-name { font-size: 10px; }
+.card.card-sm .card-stat { font-size: 9px; padding: 1px 3px; }
+
 .card-member-img {
   width: calc(100% + 8px);
   margin: -4px -4px 5px -4px;

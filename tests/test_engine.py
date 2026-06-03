@@ -569,12 +569,28 @@ class TestNewAbilities:
         assert d == 9
         assert h == 3
 
-    def test_wano_matsuri_draw_boost(self):
-        """id=12 わの祭り: draw+3"""
-        from engine import hooks
+    def test_wano_matsuri_search_support_on_form(self):
+        """id=12 わの祭り: on_form search_support → デッキからサポート1枚を手札へ"""
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
         inst = self._inst(12)
-        d, m, h = hooks.apply_on_band_stat(inst, 5, 5, 5)
-        assert d == 8
+        from engine.models import CardInstance, CardKind
+        # デッキのサポートを全部除いて分かりやすいものだけ残す
+        alice.deck = [c for c in alice.deck if c.kind != "support"]
+        support = CardInstance(catalog_id="support_test", kind=CardKind.SUPPORT,
+                               name="テストサポート", draw=0, music=0, human=0)
+        alice.deck.append(support)
+        _inject_members(alice, count=2, draw=3, music=2, human=2)
+        alice.field_members.append(inst)
+        field_ids = [c.instance_id for c in alice.field_members]
+        hand_before = len(alice.hand)
+        alice_id = alice.player_id
+        state, _ = apply_action(state, alice_id,
+                                FormBandAction(member_instance_ids=field_ids))
+        alice = state.players[0]  # deep copy 後に再参照
+        assert len(alice.hand) == hand_before + 1
+        assert any(c.name == "テストサポート" for c in alice.hand)
 
     def test_ichiro_raw_stats(self):
         """id=11 Ichiro Yamaguchi: 能力なし、生のステータスで圧倒 (draw=50, music=299, human=50)"""
@@ -585,12 +601,20 @@ class TestNewAbilities:
         assert card.music == 299
         assert card.human == 50
 
-    def test_sama_d_hangover_music_boost(self):
-        """id=23 さまD（二日酔い）: music+5"""
-        from engine import hooks
+    def test_sama_d_hangover_opponents_discard(self):
+        """id=23 さまD（二日酔い）: on_play → 相手全員が手札1枚捨てる"""
+        state = _game_2p()
+        state = _skip_mulligan(state)
+        alice = state.players[0]
         inst = self._inst(23)
-        d, m, h = hooks.apply_on_band_stat(inst, 5, 5, 5)
-        assert m == 10
+        alice.hand.append(inst)
+        bob_hand_before = len(state.players[1].hand)
+        state.actions_remaining = 3
+        state, _ = apply_action(state, alice.player_id,
+                                PlayMemberAction(card_instance_id=inst.instance_id))
+        bob = state.players[1]
+        assert len(bob.hand) == bob_hand_before - 1
+        assert len(bob.discard) == 1
 
     # --- judgment ---
 
@@ -613,14 +637,14 @@ class TestNewAbilities:
         assert mods.success_draw_bonus == 6
         assert mods.success_music_bonus == 3
 
-    def test_goto_judgment_human_delta(self):
-        """id=14 ごとぅさん: human+2 in judgment"""
+    def test_goto_force_success(self):
+        """id=14 ごとぅさん: on_judgment force_success → ライブ強制成功"""
         from engine import hooks
         inst = self._inst(14)
         mods = hooks.JudgmentMods()
         ev = hooks.apply_on_judgment(inst, mods)
-        assert mods.human_delta == 2
-        assert any("対応力+2" in e for e in ev)
+        assert mods.force_success is True
+        assert any("強制成功" in e for e in ev)
 
     # --- on_form ---
 

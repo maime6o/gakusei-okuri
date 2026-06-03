@@ -496,6 +496,8 @@ def _process_one_band(
         if not live_success:
             events.append("「卒業」: どんな事件でもライブ成功！")
         live_success = True
+    elif mods.force_success:
+        live_success = True
     elif mods.force_failure:
         live_success = False
 

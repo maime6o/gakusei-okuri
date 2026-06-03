@@ -193,6 +193,47 @@ def apply_on_play(
             member.used_once = True
             events.append(f"{member.name}の「{ab.name}」: 動員数+{n}")
 
+    elif effect == "rewrite_field_gender_male":
+        changed = [m for m in player.field_members if m.gender != "male"]
+        for m in changed:
+            m.gender = "male"
+        if changed:
+            names = "、".join(m.name for m in changed)
+            events.append(f"{member.name}の「{ab.name}」: {names} を男性に書き換え")
+        else:
+            events.append(f"{member.name}の「{ab.name}」: フィールドに対象なし")
+
+    elif effect == "steal_support":
+        import random as _rnd
+        targets = [
+            (p, c)
+            for p in state.players if p.player_id != player.player_id
+            for c in p.hand if c.kind == "support"
+        ]
+        if targets:
+            target_p, stolen = _rnd.choice(targets)
+            target_p.hand.remove(stolen)
+            player.hand.append(stolen)
+            events.append(f"{member.name}の「{ab.name}」: {target_p.name} の手札「{stolen.name}」を奪った！")
+        else:
+            events.append(f"{member.name}の「{ab.name}」: 相手にサポートカードなし")
+
+    elif effect == "opponents_discard_random":
+        import random as _rnd
+        discarded = []
+        for p in state.players:
+            if p.player_id == player.player_id:
+                continue
+            if p.hand:
+                card = _rnd.choice(p.hand)
+                p.hand.remove(card)
+                p.discard.append(card)
+                discarded.append(f"{p.name}:「{card.name}」")
+        if discarded:
+            events.append(f"{member.name}の「{ab.name}」: {' / '.join(discarded)} を捨てさせた")
+        else:
+            events.append(f"{member.name}の「{ab.name}」: 相手に手札なし")
+
     return events
 
 
@@ -214,6 +255,18 @@ def apply_on_form(
     if ab.effect == "action+1":
         state.actions_remaining += 1
         events.append(f"{member.name}の「{ab.name}」: 行動+1")
+
+    elif ab.effect == "search_support":
+        import random
+        player = state.current_player
+        candidates = [c for c in player.deck if c.kind == "support"]
+        if candidates:
+            picked = random.choice(candidates)
+            player.deck.remove(picked)
+            player.hand.append(picked)
+            events.append(f"{member.name}の「{ab.name}」: デッキから「{picked.name}」を手札に追加")
+        else:
+            events.append(f"{member.name}の「{ab.name}」: デッキにサポートなし")
 
     elif ab.effect == "recruit_from_deck":
         import random
@@ -243,7 +296,7 @@ class JudgmentMods(object):
 
     __slots__ = (
         "human_delta", "severity_delta", "success_draw_bonus", "success_music_bonus",
-        "force_failure", "self_remove_ids",
+        "force_failure", "force_success", "self_remove_ids",
     )
 
     def __init__(self) -> None:
@@ -252,6 +305,7 @@ class JudgmentMods(object):
         self.success_draw_bonus = 0
         self.success_music_bonus = 0
         self.force_failure = False
+        self.force_success = False
         self.self_remove_ids: list[str] = []
 
 
@@ -272,6 +326,11 @@ def apply_on_judgment(
         return events
 
     effect = ab.effect
+
+    if effect == "force_success":
+        mods.force_success = True
+        events.append(f"{member.name}の「{ab.name}」: ライブ強制成功！")
+        return events
 
     # 特定の事件でライブ強制失敗＋自身除外  例: "fail_on_留年_self_remove"
     if effect.startswith("fail_on_") and effect.endswith("_self_remove"):

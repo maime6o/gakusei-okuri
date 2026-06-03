@@ -200,10 +200,10 @@
       "human": 1,
       "copies": 1,
       "ability": {
-        "name": "フェス感",
-        "hook": "on_band_stat",
-        "type": "static",
-        "effect": "draw+3"
+        "name": "大合唱",
+        "hook": "on_form",
+        "type": "on_form",
+        "effect": "search_support"
       }
     },
     {
@@ -235,10 +235,10 @@
       "human": 2,
       "copies": 2,
       "ability": {
-        "name": "大人の対応",
+        "name": "土壇場のひと声",
         "hook": "on_judgment",
         "type": "judgment",
-        "effect": "human+2"
+        "effect": "force_success"
       }
     },
     {
@@ -305,10 +305,10 @@
       "human": 3,
       "copies": 2,
       "ability": {
-        "name": "謎の威圧感",
-        "hook": "on_band_stat",
-        "type": "static",
-        "effect": "human+2"
+        "name": "紳士化",
+        "hook": "on_play",
+        "type": "on_play",
+        "effect": "rewrite_field_gender_male"
       }
     },
     {
@@ -356,10 +356,10 @@
       "human": 5,
       "copies": 1,
       "ability": {
-        "name": "学校の主",
-        "hook": "on_band_stat",
-        "type": "static",
-        "effect": "human+3"
+        "name": "留年の余裕",
+        "hook": "on_play",
+        "type": "on_play",
+        "effect": "steal_support"
       }
     },
     {
@@ -390,10 +390,10 @@
       "human": 1,
       "copies": 1,
       "ability": {
-        "name": "二日酔いの天才",
-        "hook": "on_band_stat",
-        "type": "static",
-        "effect": "music+5"
+        "name": "二日酔いハラスメント",
+        "hook": "on_play",
+        "type": "on_play",
+        "effect": "opponents_discard_random"
       }
     },
     {

@@ -658,6 +658,7 @@ function renderGame() {
       <div class="section-title">手札（${me.hand.length}枚）</div>
       <div class="cards-row">
         ${(me.hand || []).map(c => cardHtml(c, {
+          large:       true,
           selectable:  isMyTurn,
           selected:    S.sel.includes(c.instance_id),
           disabled:    c.kind === 'member' && c.music > me.performance_record,
@@ -673,6 +674,7 @@ function renderGame() {
         <div class="section-title">フィールド — バンド未所属（${me.field_members.length}人）</div>
         <div class="cards-row">
           ${me.field_members.map(c => cardHtml(c, {
+            small:      true,
             selectable: isMyTurn,
             selected:   S.sel.includes(c.instance_id),
           })).join('')}
@@ -958,6 +960,7 @@ function cardHtml(c, opts = {}) {
   if (c.instance_id) _cardCache[c.instance_id] = c;
   const cls = [
     'card',
+    opts.large      ? 'card-lg'   : opts.small ? 'card-sm' : '',
     opts.selected   ? 'selected'  : '',
     opts.disabled   ? 'disabled'  : '',
     c.face_down     ? 'face-down' : '',
@@ -984,8 +987,9 @@ function cardInner(c, opts = {}) {
   const imgHtml = imgSrc
     ? `<div class="card-member-img"><img src="${imgSrc}" alt="" loading="lazy" onerror="this.parentNode.style.display='none'"></div>`
     : '';
+  const genderMark = c.gender === 'male' ? ' ♂' : c.gender === 'female' ? ' ♀' : '';
   const kindLabel = c.kind === 'member'
-    ? (c.part || '')
+    ? `${c.part || ''}${genderMark}`
     : `${_KIND_JA[c.kind]||c.kind}${c.phase ? ' · ' + (_PHASE_JA[c.phase]||c.phase) : ''}`;
   const statsContent = c.kind === 'member'
     ? `<span class="card-stat draw">集${c.draw}</span>
@@ -1081,6 +1085,11 @@ function effectToJa(effect) {
     'zero_music_deck_hand':     '自分のデッキ・手札メンバーの音楽性を0に',
     'poach_random_member':      '相手バンドを解散、メンバー1人を自バンドへ引き抜く',
     'draw2':                    '手札を2枚引く',
+    'search_support':           'バンド結成時: デッキからサポート1枚を手札へ',
+    'force_success':            'ライブを強制成功させる',
+    'rewrite_field_gender_male':'フィールドの全メンバーを男性に書き換え',
+    'steal_support':            '相手の手札からサポート1枚を奪う',
+    'opponents_discard_random': '相手全員が手札からランダム1枚を捨てる',
   };
   if (exact[effect]) return exact[effect];
   if (effect.startsWith('deal_token:'))
@@ -1113,6 +1122,7 @@ function isAbilityImpl(ab) {
   return key === 'static:on_band_stat' ||
          key === 'on_play:on_play'     ||
          key === 'on_play:on_form'     ||
+         key === 'on_form:on_form'     ||
          key === 'judgment:on_judgment';
 }
 
