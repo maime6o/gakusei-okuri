@@ -963,9 +963,10 @@ async function showCatalogModal() {
       ? `/images/members/${partKey}_${c.gender}.png` : null;
     const imgHtml = imgSrc
       ? `<img src="${imgSrc}" alt="" loading="lazy" onerror="this.style.display='none'">` : '';
-    const desc = c.description || (c.ability?.name ? `【${c.ability.name}】` : '');
-    const abilityHtml = desc
-      ? `<div class="catalog-ability">${esc(desc)}</div>` : '';
+    const abilityName = c.ability?.name ? `【${c.ability.name}】` : '';
+    const abilityBody = c.description || '';
+    const abilityHtml = (abilityName || abilityBody)
+      ? `<div class="catalog-ability">${esc(abilityName)}${abilityName && abilityBody ? ' ' : ''}${esc(abilityBody)}</div>` : '';
     const statsHtml = c.kind === 'member'
       ? `<div class="catalog-stats">
            <span title="集客力">集${c.draw ?? 0}</span>
