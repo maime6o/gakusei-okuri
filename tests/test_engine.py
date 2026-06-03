@@ -539,12 +539,14 @@ class TestMemberRoster:
                 assert m.ability is not None, f"{m.name}(id={m.id}) has no ability"
 
     def test_no_ability_members(self):
-        """能力なし10名は ability=None"""
+        """能力なしはIchiro(11)と走る足(34)のみ"""
         from engine.catalog import all_members
-        no_ability_ids = {1, 2, 3, 6, 7, 8, 9, 13, 15, 16}
+        no_ability_ids = {11, 34}
         for m in all_members():
             if m.id in no_ability_ids:
                 assert m.ability is None, f"{m.name}(id={m.id}) should have no ability"
+            elif m.id in {1, 2, 3, 6, 7, 8, 9, 13, 15, 16}:
+                assert m.ability is not None, f"{m.name}(id={m.id}) should now have an ability"
 
 
 # ---------------------------------------------------------------------------
@@ -651,6 +653,85 @@ class TestNewAbilities:
         # played 1 card out, drew 1 back → net 0
         assert len(state.players[0].hand) == hand_before - 1 + 1
         assert any("即興演奏" in e for e in events)
+
+    # --- newly added abilities ---
+
+    def test_keisuke_band_stat_draw_and_human(self):
+        """id=1 けーすけ: バンドの要 → draw+1, human+1"""
+        from engine import hooks
+        inst = self._inst(1)
+        d, m, h = hooks.apply_on_band_stat(inst, 5, 5, 5)
+        assert d == 6
+        assert h == 6
+
+    def test_tatsube_gitarist_no_pride_success_draw(self):
+        """id=2 たつぼー: ギタリストの意地 → success_draw+2"""
+        from engine import hooks
+        inst = self._inst(2)
+        mods = hooks.JudgmentMods()
+        hooks.apply_on_judgment(inst, mods)
+        assert mods.success_draw_bonus == 2
+
+    def test_naganagase_music_boost(self):
+        """id=3 ながながせ: 楽曲担当 → music+2"""
+        from engine import hooks
+        inst = self._inst(3)
+        d, m, h = hooks.apply_on_band_stat(inst, 5, 5, 5)
+        assert m == 7
+
+    def test_kame_judgment_human_delta(self):
+        """id=6 かめ: 亀の粘り → human+2 in judgment"""
+        from engine import hooks
+        inst = self._inst(6)
+        mods = hooks.JudgmentMods()
+        hooks.apply_on_judgment(inst, mods)
+        assert mods.human_delta == 2
+
+    def test_ohana_band_stat_draw_and_human(self):
+        """id=7 おはなさん: ビートの女王 → draw+2, human+1"""
+        from engine import hooks
+        inst = self._inst(7)
+        d, m, h = hooks.apply_on_band_stat(inst, 5, 5, 5)
+        assert d == 7
+        assert h == 6
+
+    def test_sama_d_charisma_draw_boost(self):
+        """id=8 さまD: カリスマ性 → draw+3"""
+        from engine import hooks
+        inst = self._inst(8)
+        d, m, h = hooks.apply_on_band_stat(inst, 5, 5, 5)
+        assert d == 8
+
+    def test_sora_severity_reduction(self):
+        """id=9 そらさん: ピンチに強い → severity-2"""
+        from engine import hooks
+        inst = self._inst(9)
+        mods = hooks.JudgmentMods()
+        hooks.apply_on_judgment(inst, mods)
+        assert mods.severity_delta == -2
+
+    def test_shoishoi_draw_boost(self):
+        """id=13 しょいしょい: ノリの良さ → draw+2"""
+        from engine import hooks
+        inst = self._inst(13)
+        d, m, h = hooks.apply_on_band_stat(inst, 5, 5, 5)
+        assert d == 7
+
+    def test_shio_judgment_human_delta(self):
+        """id=15 しおちゃん: 静かなる力 → human+3 in judgment"""
+        from engine import hooks
+        inst = self._inst(15)
+        mods = hooks.JudgmentMods()
+        hooks.apply_on_judgment(inst, mods)
+        assert mods.human_delta == 3
+
+    def test_ucchi_success_draw_bonus(self):
+        """id=16 うっちー: ライブ映え → success_draw+2"""
+        from engine import hooks
+        inst = self._inst(16)
+        mods = hooks.JudgmentMods()
+        hooks.apply_on_judgment(inst, mods)
+        assert mods.success_draw_bonus == 2
 
 
 # ---------------------------------------------------------------------------
