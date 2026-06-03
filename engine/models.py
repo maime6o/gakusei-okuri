@@ -151,6 +151,7 @@ class PlayerState(BaseModel):
     encore_pending: bool = False
     force_live_success: bool = False
     first_turn_done: bool = False
+    taiban_cooldown: int = 0
 
 
 class GameState(BaseModel):

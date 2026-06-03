@@ -21,6 +21,7 @@ from engine.actions import apply_action, ActionError
 app = FastAPI(title="学生課送り", version="0.2.0")
 
 STATIC_DIR = pathlib.Path(__file__).parent.parent / "static"
+DATA_DIR   = pathlib.Path(__file__).parent.parent / "data"
 
 # ─────────────────────────────────────────────
 # Health
@@ -29,6 +30,22 @@ STATIC_DIR = pathlib.Path(__file__).parent.parent / "static"
 @app.get("/healthz")
 def healthz():
     return {"status": "ok"}
+
+
+# ─────────────────────────────────────────────
+# Catalog
+# ─────────────────────────────────────────────
+
+@app.get("/catalog")
+def get_catalog():
+    catalog_path = DATA_DIR / "catalog.json"
+    if not catalog_path.exists():
+        raise HTTPException(status_code=404, detail="catalog not found")
+    data = json.loads(catalog_path.read_text(encoding="utf-8"))
+    cards: list[Any] = []
+    for section in ("members", "supports", "antis"):
+        cards.extend(data.get(section, []))
+    return cards
 
 
 # ─────────────────────────────────────────────

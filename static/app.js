@@ -279,6 +279,14 @@ function renderLobby() {
           </div>
 
           <div class="card-section">
+            <h3>📋 カード一覧</h3>
+            <p style="color:var(--muted);font-size:12px">全カードの能力・ステータスを確認できます。</p>
+            <button class="btn btn-secondary" onclick="showCatalogModal()">
+              カード一覧を見る
+            </button>
+          </div>
+
+          <div class="card-section">
             <h3>📱 オンライン対戦</h3>
             <div class="online-subsection">
               <div class="online-subsection-label">部屋を作る</div>
@@ -834,10 +842,17 @@ function renderToolbar(me, gs) {
       <button class="btn btn-secondary btn-sm" onclick="onSetAnti()">
         アンチ伏せる
       </button>` : ''}
-    ${me.bands?.length > 0 && gs.players.some(p => p.player_id !== S.myPlayerId && p.bands?.length > 0) ? `
-      <button class="btn btn-secondary btn-sm" onclick="openTaibanModal()">
-        🎸 対バン
-      </button>` : ''}
+    ${me.bands?.length > 0 && gs.players.some(p => p.player_id !== S.myPlayerId && p.bands?.length > 0) ? (() => {
+        const cd = me.taiban_cooldown || 0;
+        if (cd > 0) {
+          return `<button class="btn btn-secondary btn-sm" disabled style="opacity:0.4;cursor:not-allowed">
+            🎸 対バン（クールダウン中 あと${cd}ターン）
+          </button>`;
+        }
+        return `<button class="btn btn-secondary btn-sm" onclick="openTaibanModal()">
+          🎸 対バン
+        </button>`;
+      })() : ''}
     <button class="btn btn-sm" style="background:var(--warn);color:#000;margin-left:auto"
             onclick="sendAction({type:'end_turn'})">
       ターン終了
@@ -926,6 +941,67 @@ function openTaibanModal() {
   };
 
   renderStep1();
+  document.body.appendChild(overlay);
+}
+
+async function showCatalogModal() {
+  const res = await fetch('/catalog');
+  if (!res.ok) { toast('カード一覧の取得に失敗しました'); return; }
+  const cards = await res.json();
+
+  const kindLabel = k => ({ member: 'メンバー', support: 'サポート', anti: 'アンチ' }[k] || k);
+
+  const groups = { member: [], support: [], anti: [] };
+  for (const c of cards) {
+    const k = c.kind || 'member';
+    if (groups[k]) groups[k].push(c);
+  }
+
+  function cardBlock(c) {
+    const partKey = (c.part || '').replace('/', '');
+    const imgSrc = c.kind === 'member' && partKey && c.gender
+      ? `/images/members/${partKey}_${c.gender}.png` : null;
+    const imgHtml = imgSrc
+      ? `<img src="${imgSrc}" alt="" loading="lazy" onerror="this.style.display='none'">` : '';
+    const desc = c.description || (c.ability?.name ? `【${c.ability.name}】` : '');
+    const abilityHtml = desc
+      ? `<div class="catalog-ability">${esc(desc)}</div>` : '';
+    const statsHtml = c.kind === 'member'
+      ? `<div class="catalog-stats">
+           <span title="集客力">集${c.draw ?? 0}</span>
+           <span title="音楽性">音${c.music ?? 0}</span>
+           <span title="対応力">応${c.human ?? 0}</span>
+           ${c.part ? `<span class="catalog-part">${esc(c.part)}</span>` : ''}
+         </div>` : '';
+    return `
+      <div class="catalog-card">
+        ${imgHtml}
+        <div class="catalog-name">${esc(c.name)}</div>
+        ${statsHtml}
+        ${abilityHtml}
+      </div>`;
+  }
+
+  const sectionHtml = Object.entries(groups)
+    .filter(([, arr]) => arr.length > 0)
+    .map(([kind, arr]) => `
+      <div class="catalog-section">
+        <h3 class="catalog-section-title">${kindLabel(kind)}（${arr.length}枚）</h3>
+        <div class="catalog-grid">${arr.map(cardBlock).join('')}</div>
+      </div>`).join('');
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.style.display = 'flex';
+  overlay.innerHTML = `
+    <div class="modal catalog-modal">
+      <div class="catalog-header">
+        <h2 style="margin:0">📋 カード一覧</h2>
+        <button class="btn btn-sm" onclick="this.closest('.modal-overlay').remove()">✕ 閉じる</button>
+      </div>
+      <div class="catalog-body">${sectionHtml}</div>
+    </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
   document.body.appendChild(overlay);
 }
 

@@ -359,6 +359,8 @@ def _handle_end_turn(
 ) -> tuple[GameState, list[str]]:
     _assert_current_player(s, player_id)
     player = _get_player(s, player_id)
+    if player.taiban_cooldown > 0:
+        player.taiban_cooldown -= 1
     events.append(f"{player.name}: ターン終了 → ライブフェーズへ")
     s.last_live_results = []
     s.phase = Phase.LIVE_PROCESSING
@@ -758,6 +760,9 @@ def _handle_taiban(
     _cost_action(s, 1)
     player = _get_player(s, player_id)
 
+    if player.taiban_cooldown > 0:
+        raise ActionError(f"対バンはクールダウン中です（あと{player.taiban_cooldown}ターン）")
+
     my_band = next((b for b in player.bands if b.band_id == action.my_band_id), None)
     if not my_band:
         raise ActionError("指定したバンドが見つかりません")
@@ -809,6 +814,7 @@ def _handle_taiban(
             "result": "lose",
         }
 
+    player.taiban_cooldown = 3
     return s, events
 
 
