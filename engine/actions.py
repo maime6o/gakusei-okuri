@@ -51,6 +51,8 @@ class UseSupportAction(BaseModel):
     type: Literal["use_support"] = "use_support"
     card_instance_id: str
     target_band_id: str | None = None
+    target_member_id: str | None = None
+    target_player_id: str | None = None
 
 
 class SetAntiAction(BaseModel):
@@ -302,7 +304,7 @@ def _handle_use_support(
     player.hand.remove(card)
     player.discard.append(card)
 
-    ev = _apply_support_effect_action(card, player, s)
+    ev = _apply_support_effect_action(card, player, s, action)
     events.extend(ev)
     events.append(f"{player.name}: サポート「{card.name}」を使用")
     return s, events
@@ -823,7 +825,8 @@ def _handle_taiban(
 # ---------------------------------------------------------------------------
 
 def _apply_support_effect_action(
-    card: CardInstance, player: "PlayerState", s: "GameState"
+    card: CardInstance, player: "PlayerState", s: "GameState",
+    action: "UseSupportAction | None" = None,
 ) -> list[str]:
     events: list[str] = []
     effect = card.effect or ""
@@ -836,12 +839,61 @@ def _apply_support_effect_action(
         player.hand.clear()
         _draw_cards_player(player, count)
         events.append(f"「{card.name}」: 手札{count}枚を引き直し")
+    elif effect == "redraw_boost_non_music":
+        count = len(player.hand)
+        player.discard.extend(player.hand)
+        player.hand.clear()
+        _draw_cards_player(player, count)
+        for c in player.hand:
+            if c.kind == CardKind.MEMBER:
+                c.draw += 2
+                c.human += 2
+        events.append(f"「{card.name}」: 手札{count}枚を引き直し、引いたメンバーの集客力・対応力+2")
+    elif effect == "hand_music-2":
+        changed = 0
+        for c in player.hand:
+            if c.kind == CardKind.MEMBER and c.music > 0:
+                c.music = max(0, c.music - 2)
+                changed += 1
+        events.append(f"「{card.name}」: 手札のメンバー{changed}枚の音楽性-2")
+    elif effect == "sell_member_to_opponent":
+        member_id = action.target_member_id if action else None
+        target_pid = action.target_player_id if action else None
+        sold = None
+        sold_band = None
+        for band in player.bands:
+            for m in band.members:
+                if m.instance_id == member_id:
+                    sold = m
+                    sold_band = band
+                    break
+        if not sold:
+            events.append(f"「{card.name}」: 売却対象メンバーが見つかりません")
+        else:
+            target_p = next(
+                (p for p in s.players if p.player_id == target_pid),
+                next((p for p in s.players if p.player_id != player.player_id), None)
+            )
+            if not target_p:
+                events.append(f"「{card.name}」: 売却先プレイヤーが見つかりません")
+            else:
+                sold_band.members.remove(sold)
+                if not sold_band.members:
+                    player.bands.remove(sold_band)
+                target_p.field_members.append(sold)
+                player.performance_record += 7
+                events.append(
+                    f"「{card.name}」: 「{sold.name}」を{target_p.name}の場に売却。活動実績+7"
+                )
     elif effect == "free_play_member":
         player.free_member_play = True
         events.append(f"「{card.name}」: 次のメンバーをコスト0でプレイ可能")
     elif effect == "music+3":
         player.pending_live_music_bonus += 3
         events.append(f"「{card.name}」: このターン音楽性+3")
+    elif effect == "music+4":
+        player.pending_live_music_bonus += 4
+        events.append(f"「{card.name}」: このターン全バンドの音楽性+4")
     elif effect == "draw+3":
         player.pending_live_draw_bonus += 3
         events.append(f"「{card.name}」: このターン集客力+3")
@@ -851,6 +903,9 @@ def _apply_support_effect_action(
     elif effect == "severity-2":
         player.pending_severity_reduction += 2
         events.append(f"「{card.name}」: このターン事件性-2")
+    elif effect == "severity-4":
+        player.pending_severity_reduction += 4
+        events.append(f"「{card.name}」: このターン全バンドの事件性-4")
     elif effect == "encore":
         player.encore_pending = True
         events.append(f"「{card.name}」: 最初に成功したバンドがアンコールで追加ライブ！")

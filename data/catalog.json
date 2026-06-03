@@ -617,12 +617,12 @@
       "name": "練習スタジオ確保",
       "kind": "support",
       "phase": "action",
-      "effect": "music+3",
+      "effect": "music+4",
       "copies": 1,
       "draw": 0,
       "music": 0,
       "human": 0,
-      "description": "このターン、自バンドの音楽性+3。"
+      "description": "このターン、自分のすべてのバンドの音楽性+4。"
     },
     {
       "name": "ビラ配り",
@@ -650,12 +650,12 @@
       "name": "顧問の口添え",
       "kind": "support",
       "phase": "action",
-      "effect": "severity-2",
+      "effect": "severity-4",
       "copies": 1,
       "draw": 0,
       "music": 0,
       "human": 0,
-      "description": "このターン、事件性-2。顧問の意外な一言が場を救う。"
+      "description": "このターン、すべてのバンドの事件性-4。"
     },
     {
       "name": "機材車",
@@ -672,12 +672,12 @@
       "name": "打ち上げで結束",
       "kind": "support",
       "phase": "action",
-      "effect": "redraw_hand",
+      "effect": "redraw_boost_non_music",
       "copies": 1,
       "draw": 0,
       "music": 0,
       "human": 0,
-      "description": "手札を全て捨て、同じ枚数を引き直す。"
+      "description": "手札を全て引き直す。引き直したカードの集客力・対応力がそれぞれ+2。"
     },
     {
       "name": "アンコール",
@@ -738,12 +738,12 @@
       "name": "転売",
       "kind": "support",
       "phase": "action",
-      "effect": "steal_random_band",
+      "effect": "sell_member_to_opponent",
       "copies": 1,
       "draw": 0,
       "music": 0,
       "human": 0,
-      "description": "相手のバンドを1つランダムに奪い、自分のフィールドに加える。"
+      "description": "自分のバンドメンバーを1名選んで売却。そのメンバーを相手の場に加え、自分の活動実績+7。売る相手を選べる。"
     },
     {
       "name": "代理出席",
@@ -782,12 +782,12 @@
       "name": "大学院への進学",
       "kind": "support",
       "phase": "action",
-      "effect": "zero_music_deck_hand",
+      "effect": "hand_music-2",
       "copies": 1,
       "draw": 0,
       "music": 0,
       "human": 0,
-      "description": "自分のデッキ・手札にあるメンバーの音楽性を全て0にする。"
+      "description": "自分の手札にいるすべてのメンバーの音楽性を-2（最低0）。"
     }
   ],
   "antis": [

@@ -1210,8 +1210,68 @@ function onUseSupport() {
   const me = myPlayer();
   const id = S.sel.find(id => me.hand.find(c => c.instance_id === id && c.kind === 'support'));
   if (!id) return;
+  const card = me.hand.find(c => c.instance_id === id);
+  if (card?.effect === 'sell_member_to_opponent') {
+    openSellMemberModal(id);
+    return;
+  }
   sendAction({ type: 'use_support', card_instance_id: id });
   S.sel = [];
+}
+
+function openSellMemberModal(cardId) {
+  const gs = S.gameState;
+  const me = gs.players.find(p => p.player_id === S.myPlayerId);
+  const allMembers = me.bands.flatMap(b => b.members.map(m => ({ ...m, _bandId: b.band_id })));
+  if (!allMembers.length) { toast('バンドにメンバーがいません'); return; }
+
+  const opponents = gs.players.filter(p => p.player_id !== S.myPlayerId);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.style.display = 'flex';
+
+  function step1() {
+    overlay.innerHTML = `<div class="modal">
+      <h2 style="margin-top:0">💴 転売 — 売るメンバーを選択</h2>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+        ${allMembers.map(m => `
+          <button class="btn btn-secondary btn-sm" onclick="window._sellStep2('${m.instance_id}','${esc(m.name)}')">
+            ${esc(m.name)}（集${m.draw} 音${m.music} 応${m.human}）
+          </button>`).join('')}
+      </div>
+      <button class="btn btn-sm" onclick="this.closest('.modal-overlay').remove()">キャンセル</button>
+    </div>`;
+  }
+
+  window._sellStep2 = (memberId, memberName) => {
+    if (opponents.length === 1) {
+      overlay.remove();
+      sendAction({ type: 'use_support', card_instance_id: cardId,
+                   target_member_id: memberId, target_player_id: opponents[0].player_id });
+      S.sel = [];
+      return;
+    }
+    overlay.innerHTML = `<div class="modal">
+      <h2 style="margin-top:0">💴 転売 — 売る相手を選択</h2>
+      <p style="color:var(--muted)">「${esc(memberName)}」を誰に売りますか？</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+        ${opponents.map(p => `
+          <button class="btn btn-secondary btn-sm"
+            onclick="this.closest('.modal-overlay').remove();
+                     sendAction({type:'use_support',card_instance_id:'${cardId}',
+                       target_member_id:'${memberId}',target_player_id:'${p.player_id}'});
+                     S.sel=[];">
+            ${esc(p.name)}
+          </button>`).join('')}
+      </div>
+      <button class="btn btn-sm" onclick="window._sellStep2('${memberId}','${esc(memberName)}')">戻る</button>
+    </div>`;
+  };
+
+  step1();
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
 }
 
 function onSetAnti() {
