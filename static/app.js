@@ -119,7 +119,7 @@ function updatePhaseTag() {
   const cp = gs.players?.[gs.current_player_idx];
   const isMyTurn = gs.phase === 'action' && cp?.player_id === S.myPlayerId;
   pt.style.display = '';
-  pt.textContent = phaseLabel(gs.phase) + (isMyTurn ? ` 残${gs.actions_remaining}手` : '');
+  pt.textContent = phaseLabel(gs.phase) + (isMyTurn ? ' あなたの手番' : '');
   pt.className = 'phase-tag' + (isMyTurn ? ' active' : '');
 }
 
@@ -812,7 +812,18 @@ function renderToolbar(me, gs) {
   const selHandAnti    = sel.find(id => hand.find(c => c.instance_id === id && c.kind === 'anti'));
   const selFieldIds    = sel.filter(id => field.find(c => c.instance_id === id));
 
+  const apRemain = gs.actions_remaining;
+  const apShow   = Math.min(apRemain, 6);
+  const pips = Array.from({length: 6}, (_, i) =>
+    `<div class="ap-pip${i < apShow ? '' : ' ap-pip-used'}"></div>`
+  ).join('');
+  const apExtra = apRemain > 6 ? `<span class="ap-extra">+${apRemain - 6}</span>` : '';
+
   tb.innerHTML = `
+    <div class="ap-pips" title="残り行動ポイント: ${apRemain}">
+      ${pips}${apExtra}
+      <span class="ap-label">${apRemain}</span>
+    </div>
     <button class="btn btn-secondary btn-sm" onclick="sendAction({type:'draw'})">
       ドロー
     </button>
