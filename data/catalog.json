@@ -312,91 +312,6 @@
       }
     },
     {
-      "id": 19,
-      "name": "たつぼー（酔いつぶれる）",
-      "kind": "member",
-      "part": "Gt",
-      "gender": "male",
-      "draw": 7,
-      "music": 4,
-      "human": 1,
-      "copies": 1,
-      "ability": {
-        "name": "泥酔爆発",
-        "hook": "on_band_stat",
-        "type": "static",
-        "effect": "draw+4_human-2"
-      }
-    },
-    {
-      "id": 20,
-      "name": "たつぼー（怒れる）",
-      "kind": "member",
-      "part": "Gt",
-      "gender": "male",
-      "draw": 5,
-      "music": 4,
-      "human": 2,
-      "copies": 1,
-      "ability": {
-        "name": "怒りのライブ",
-        "hook": "on_judgment",
-        "type": "judgment",
-        "effect": "severity+3_success_draw+6"
-      }
-    },
-    {
-      "id": 21,
-      "name": "たつぼー（留年する）",
-      "kind": "member",
-      "part": "Gt",
-      "gender": "male",
-      "draw": 4,
-      "music": 3,
-      "human": 5,
-      "copies": 1,
-      "ability": {
-        "name": "留年の余裕",
-        "hook": "on_play",
-        "type": "on_play",
-        "effect": "steal_support"
-      }
-    },
-    {
-      "id": 22,
-      "name": "さまD（神回）",
-      "kind": "member",
-      "part": "Gt",
-      "gender": "male",
-      "draw": 8,
-      "music": 5,
-      "human": 2,
-      "copies": 1,
-      "ability": {
-        "name": "神ライブ",
-        "hook": "on_judgment",
-        "type": "judgment",
-        "effect": "success_draw+6_success_music+3"
-      }
-    },
-    {
-      "id": 23,
-      "name": "さまD（二日酔い）",
-      "kind": "member",
-      "part": "Gt",
-      "gender": "male",
-      "draw": 3,
-      "music": 3,
-      "human": 1,
-      "copies": 1,
-      "ability": {
-        "name": "二日酔いハラスメント",
-        "hook": "on_play",
-        "type": "on_play",
-        "effect": "opponents_discard_random"
-      }
-    },
-    {
       "id": 24,
       "name": "さまD（スタジオ籠り）",
       "kind": "member",
@@ -578,6 +493,96 @@
       "human": 0,
       "ability": null,
       "copies": 0
+    },
+    {
+      "id": 35,
+      "name": "ゆまちゃん",
+      "kind": "member",
+      "part": "Gt",
+      "gender": "female",
+      "draw": 4,
+      "music": 2,
+      "human": 2,
+      "copies": 2,
+      "ability": {
+        "name": "ノリノリ",
+        "hook": "on_play",
+        "type": "on_play",
+        "effect": "draw_card"
+      },
+      "description": "場に出たとき、手札を1枚引く。"
+    },
+    {
+      "id": 36,
+      "name": "ながいさん",
+      "kind": "member",
+      "part": "Gt",
+      "gender": "male",
+      "draw": 2,
+      "music": 2,
+      "human": 3,
+      "copies": 2,
+      "ability": {
+        "name": "粘り腰",
+        "hook": "on_play",
+        "type": "on_play",
+        "effect": "performance_record+2"
+      },
+      "description": "場に出たとき、活動実績+2。"
+    },
+    {
+      "id": 37,
+      "name": "ゆらゆら",
+      "kind": "member",
+      "part": "Ba",
+      "gender": "female",
+      "draw": 2,
+      "music": 3,
+      "human": 2,
+      "copies": 1,
+      "ability": {
+        "name": "グルーヴ",
+        "hook": "on_form",
+        "type": "on_form",
+        "effect": "recruit_from_deck"
+      },
+      "description": "バンド結成時、デッキからメンバーを1人バンドに追加する。"
+    },
+    {
+      "id": 38,
+      "name": "ひよ様",
+      "kind": "member",
+      "part": "Dr",
+      "gender": "female",
+      "draw": 1,
+      "music": 1,
+      "human": 4,
+      "copies": 2,
+      "ability": {
+        "name": "貫禄",
+        "hook": "on_judgment",
+        "type": "judgment",
+        "effect": "severity-2"
+      },
+      "description": "判定時、事件性-2。"
+    },
+    {
+      "id": 39,
+      "name": "おおたけさん",
+      "kind": "member",
+      "part": "Gt",
+      "gender": "male",
+      "draw": 5,
+      "music": 3,
+      "human": 1,
+      "copies": 2,
+      "ability": {
+        "name": "威圧",
+        "hook": "on_play",
+        "type": "on_play",
+        "effect": "opponents_record-1"
+      },
+      "description": "場に出たとき、相手全員の活動実績-1。"
     }
   ],
   "supports": [
