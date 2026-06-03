@@ -841,35 +841,35 @@
     {
       "name": "苦情の電話",
       "kind": "anti",
-      "phase": "live",
-      "effect": "draw-3",
+      "phase": "post_live",
+      "effect": "post_live_remove_member",
       "copies": 1,
       "draw": 0,
       "music": 0,
       "human": 0,
-      "description": "相手バンドの集客力-3。相手のターン中、ライブ前に公開して発動。"
+      "description": "指定した相手のライブ終了後、そのバンドメンバー1名が謝罪のため学生課送りになる。"
     },
     {
       "name": "機材トラブル",
       "kind": "anti",
-      "phase": "live",
-      "effect": "music-3",
+      "phase": "judgment",
+      "effect": "force_live_failure",
       "copies": 1,
       "draw": 0,
       "music": 0,
       "human": 0,
-      "description": "相手バンドの音楽性-3。相手のターン中、ライブ前に公開して発動。"
+      "description": "指定した相手のライブを強制的に失敗させる。"
     },
     {
-      "name": "練習不足の指摘",
+      "name": "ペットボトル事件",
       "kind": "anti",
-      "phase": "judgment",
-      "effect": "human-3",
+      "phase": "live",
+      "effect": "setter_gains_chiba",
       "copies": 1,
       "draw": 0,
       "music": 0,
       "human": 0,
-      "description": "相手バンドの対応力-3。相手のターン中、判定前に公開して発動。"
+      "description": "誰かがライブをすると、セットしたプレイヤーのフィールドにチバユウスケが召喚される。"
     },
     {
       "name": "部室の鍵がない",
@@ -885,13 +885,13 @@
     {
       "name": "ライバルの妨害",
       "kind": "anti",
-      "phase": "judgment",
-      "effect": "halve_draw",
+      "phase": "live",
+      "effect": "draw-10",
       "copies": 0,
       "draw": 0,
       "music": 0,
       "human": 0,
-      "description": "相手バンドの集客力を半減する。相手のターン中、判定前に公開して発動（現在準備中）。"
+      "description": "指定した相手のライブの集客力-10。"
     }
   ],
   "incidents": [

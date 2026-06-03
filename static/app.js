@@ -1105,10 +1105,14 @@ function showActionPopup(events) {
   if (existing) existing.remove();
   const el = document.createElement('div');
   el.className = 'action-popup';
-  el.innerHTML = events.map(e => `<div>${esc(e)}</div>`).join('');
+  el.innerHTML = events.map(e => {
+    const isAnti = /アンチ|発動|学生課送り|召喚|強制失敗/.test(e);
+    const style = isAnti ? ' style="color:#ff6b6b;font-weight:bold"' : '';
+    return `<div${style}>${esc(e)}</div>`;
+  }).join('');
   document.body.appendChild(el);
   clearTimeout(el._t);
-  el._t = setTimeout(() => el.remove(), 3800);
+  el._t = setTimeout(() => el.remove(), 5000);
 }
 
 function showTaibanResultPopup(result) {

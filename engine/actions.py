@@ -484,10 +484,15 @@ def _process_one_band(
             targets_me = anti.face_down or anti.anti_target_id == player.player_id
             if not targets_me:
                 continue
-            delta = _parse_anti_effect(anti.effect or "")
+            effect = anti.effect or ""
+            delta = _parse_anti_effect(effect)
             mods.human_delta += delta.get("human", 0)
             mods.severity_delta += delta.get("severity", 0)
-            events.append(f"{opponent.name}のアンチ「{anti.name}」発動！")
+            if effect == "force_live_failure":
+                mods.force_failure = True
+                events.append(f"💥 {opponent.name}のアンチ「{anti.name}」発動！ライブ強制失敗！")
+            else:
+                events.append(f"⚡ {opponent.name}のアンチ「{anti.name}」発動！")
             opponent.anti_zone.remove(anti)
             opponent.discard.append(anti)
 
@@ -560,7 +565,6 @@ def _process_one_band(
         band.live_draw = 0
         band.live_music = 0
 
-        # Auto-select a random member from the failed band
         if band.members:
             target = random.choice(band.members)
             band.members.remove(target)
@@ -569,7 +573,10 @@ def _process_one_band(
                 if band in player.bands:
                     player.bands.remove(band)
 
+        _apply_post_live_anti(s, player, band, events)
         return s, events
+
+    _apply_post_live_anti(s, player, band, events)
 
     # Live success
     player.cumulative_mobilization += mob_gain
@@ -1032,16 +1039,62 @@ def _apply_live_effects(
             targets_me = anti.face_down or anti.anti_target_id == player.player_id
             if not targets_me:
                 continue
-            delta = _parse_anti_effect(anti.effect or "")
-            draw += delta.get("draw", 0)
-            music += delta.get("music", 0)
-            events.append(
-                f"{opponent.name}のアンチ「{anti.name}」発動！"
-                f" 集客力{delta.get('draw', 0):+d} 音楽性{delta.get('music', 0):+d}"
-            )
+            effect = anti.effect or ""
+            if effect == "setter_gains_chiba":
+                _spawn_chiba_for(opponent, s, events, anti.name)
+            else:
+                delta = _parse_anti_effect(effect)
+                draw += delta.get("draw", 0)
+                music += delta.get("music", 0)
+                parts = []
+                if delta.get("draw"): parts.append(f"集客力{delta['draw']:+d}")
+                if delta.get("music"): parts.append(f"音楽性{delta['music']:+d}")
+                events.append(
+                    f"⚡ {opponent.name}のアンチ「{anti.name}」発動！"
+                    + (f" {' '.join(parts)}" if parts else "")
+                )
             opponent.anti_zone.remove(anti)
             opponent.discard.append(anti)
     return draw, music, human
+
+
+def _apply_post_live_anti(
+    s: "GameState", player: "PlayerState", band: "Band", events: list[str]
+) -> None:
+    for opponent in s.players:
+        if opponent.player_id == player.player_id:
+            continue
+        for anti in list(opponent.anti_zone):
+            if anti.phase != "post_live":
+                continue
+            targets_me = anti.face_down or anti.anti_target_id == player.player_id
+            if not targets_me:
+                continue
+            if anti.effect == "post_live_remove_member" and band.members:
+                target = random.choice(band.members)
+                band.members.remove(target)
+                events.append(
+                    f"📞 {opponent.name}のアンチ「{anti.name}」発動！"
+                    f" 「{target.name}」が謝罪のため学生課送り"
+                )
+                if not band.members and band in player.bands:
+                    player.bands.remove(band)
+            elif anti.effect == "post_live_remove_member":
+                events.append(f"📞 {opponent.name}のアンチ「{anti.name}」発動！（メンバーなし）")
+            opponent.anti_zone.remove(anti)
+            opponent.discard.append(anti)
+
+
+def _spawn_chiba_for(
+    player: "PlayerState", s: "GameState", events: list[str], anti_name: str
+) -> None:
+    from engine.catalog import all_members, instance_from_catalog
+    chiba_entry = next((m for m in all_members() if m.id == 17), None)
+    if chiba_entry is None:
+        return
+    inst = instance_from_catalog(chiba_entry)
+    player.field_members.append(inst)
+    events.append(f"🍾 {player.name}のアンチ「{anti_name}」発動！チバユウスケがフィールドに召喚！")
 
 
 def _parse_anti_effect(effect: str) -> dict[str, int]:
