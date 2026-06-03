@@ -830,6 +830,8 @@ function getBandName(members) {
   const names = [];
   if (n === 3 && (pc['Gt']||0) >= 1 && (pc['Ba']||0) >= 1 && (pc['Dr']||0) >= 1) {
     names.push('無もなきスリーピース');
+  } else if (n === 4 && (pc['Gt']||0) >= 1 && (pc['Ba']||0) >= 1 && (pc['Dr']||0) >= 1 && (pc['Key']||0) >= 1) {
+    names.push('フルバンド');
   } else if (n === 4 && (pc['Gt']||0) >= 2 && (pc['Ba']||0) >= 1 && (pc['Dr']||0) >= 1) {
     names.push('通常バンド');
   }

@@ -968,6 +968,102 @@ class TestLiveBandResult:
 
 
 # ---------------------------------------------------------------------------
+# Band composition bonus tests
+# ---------------------------------------------------------------------------
+
+class TestBandComposition:
+    def _make_member(self, part, gender=None, draw=3, music=1, human=2):
+        from engine.models import CardInstance, CardKind
+        return CardInstance(
+            catalog_id=f"test_{part}",
+            kind=CardKind.MEMBER,
+            name=f"テスト{part}",
+            part=part,
+            gender=gender,
+            draw=draw,
+            music=music,
+            human=human,
+        )
+
+    def test_three_piece_bonus(self):
+        """Gt+Ba+Dr 3人 → 無もなきスリーピース: music+2, human+1"""
+        from engine.actions import _band_composition
+        members = [
+            self._make_member("Gt"),
+            self._make_member("Ba"),
+            self._make_member("Dr"),
+        ]
+        name, db, mb, hb = _band_composition(members)
+        assert "無もなきスリーピース" in name
+        assert mb == 2
+        assert hb == 1
+
+    def test_normal_band_bonus(self):
+        """2Gt+Ba+Dr 4人 → 通常バンド: music+2, human+3"""
+        from engine.actions import _band_composition
+        members = [
+            self._make_member("Gt"),
+            self._make_member("Gt"),
+            self._make_member("Ba"),
+            self._make_member("Dr"),
+        ]
+        name, db, mb, hb = _band_composition(members)
+        assert "通常バンド" in name
+        assert mb == 2
+        assert hb == 3
+
+    def test_full_band_bonus(self):
+        """Gt+Ba+Dr+Key 4人 → フルバンド: draw+1, music+2, human+2"""
+        from engine.actions import _band_composition
+        members = [
+            self._make_member("Gt"),
+            self._make_member("Ba"),
+            self._make_member("Dr"),
+            self._make_member("Key"),
+        ]
+        name, db, mb, hb = _band_composition(members)
+        assert "フルバンド" in name
+        assert db == 1
+        assert mb == 2
+        assert hb == 2
+
+    def test_full_band_and_girls_band_stack(self):
+        """Gt+Ba+Dr+Key の全員female → フルバンド・ガールズバンド スタック"""
+        from engine.actions import _band_composition
+        members = [
+            self._make_member("Gt",  gender="female"),
+            self._make_member("Ba",  gender="female"),
+            self._make_member("Dr",  gender="female"),
+            self._make_member("Key", gender="female"),
+        ]
+        name, db, mb, hb = _band_composition(members)
+        assert "フルバンド" in name
+        assert "ガールズバンド" in name
+        assert db == 1 + 3   # フル+ガールズ
+        assert mb == 2
+        assert hb == 2 + 1   # フル+ガールズ
+
+    def test_full_band_not_triggered_without_key(self):
+        """Gt+Ba+Dr+Gt はフルバンドにならず通常バンド"""
+        from engine.actions import _band_composition
+        members = [
+            self._make_member("Gt"),
+            self._make_member("Gt"),
+            self._make_member("Ba"),
+            self._make_member("Dr"),
+        ]
+        name, db, mb, hb = _band_composition(members)
+        assert "フルバンド" not in name
+        assert "通常バンド" in name
+
+    def test_ohana_is_key_part(self):
+        """おはなさん(id=7)のパートがKeyになっている"""
+        from engine.catalog import all_members
+        ohana = next(c for c in all_members() if c.id == 7)
+        assert ohana.part == "Key"
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 

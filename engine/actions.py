@@ -676,11 +676,16 @@ def _band_composition(members) -> tuple[str, int, int, int]:
     names: list[str] = []
     draw_bonus = music_bonus = human_bonus = 0
 
-    # Rule 1 vs 2 (mutually exclusive by size)
+    # Rule 1 / 2 / 2b (mutually exclusive by size+composition)
     if n == 3 and pc.get('Gt',0) >= 1 and pc.get('Ba',0) >= 1 and pc.get('Dr',0) >= 1:
         names.append("無もなきスリーピース")
         music_bonus += 2
         human_bonus += 1
+    elif n == 4 and pc.get('Gt',0) >= 1 and pc.get('Ba',0) >= 1 and pc.get('Dr',0) >= 1 and pc.get('Key',0) >= 1:
+        names.append("フルバンド")
+        draw_bonus  += 1
+        music_bonus += 2
+        human_bonus += 2
     elif n == 4 and pc.get('Gt',0) >= 2 and pc.get('Ba',0) >= 1 and pc.get('Dr',0) >= 1:
         names.append("通常バンド")
         music_bonus += 2
