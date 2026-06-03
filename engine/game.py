@@ -29,11 +29,14 @@ def create_game(
     builder = get_builder(config.deck_mode)
     seed = config.seed
 
+    rng = random.Random(seed) if seed is not None else random
+    first_idx = rng.randrange(len(player_names))
+
     players: list[PlayerState] = []
     for i, name in enumerate(player_names):
         deck = builder.build_player_deck(seed=(seed + i) if seed is not None else None)
         hand: list = []
-        initial_cards = 5 if i == 0 else 6
+        initial_cards = 5 if i == first_idx else 6
         for _ in range(initial_cards):
             if deck:
                 hand.append(deck.pop())
@@ -52,8 +55,9 @@ def create_game(
         players=players,
         incident_deck=incident_deck,
         target_mobilization=config.target_mobilization,
-        current_player_idx=0,
+        current_player_idx=first_idx,
         actions_remaining=3,
     )
-    state.event_log.append(f"ゲーム開始 — 目標動員数:{config.target_mobilization}")
+    first_name = player_names[first_idx]
+    state.event_log.append(f"ゲーム開始 — 目標動員数:{config.target_mobilization} / 先攻:{first_name}")
     return state

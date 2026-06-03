@@ -927,6 +927,116 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
   cursor: pointer;
 }
 
+/* ── 先攻決定ルーレット ── */
+#starting-roulette {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.roulette-inner {
+  text-align: center;
+  padding: 48px 56px;
+}
+.roulette-title {
+  font-size: 18px;
+  color: var(--muted);
+  margin-bottom: 28px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+.roulette-name {
+  font-size: 56px;
+  font-weight: bold;
+  color: var(--accent);
+  min-height: 80px;
+  line-height: 1.1;
+  transition: color 0.1s;
+}
+.roulette-name.roulette-landed {
+  color: #fff;
+  text-shadow: 0 0 32px var(--accent);
+  animation: roulette-pop 0.45s cubic-bezier(.36,.07,.19,.97);
+}
+@keyframes roulette-pop {
+  0%   { transform: scale(0.75); }
+  60%  { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+.roulette-decide {
+  font-size: 26px;
+  color: var(--accent);
+  font-weight: bold;
+  margin-top: 20px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: none;
+}
+.roulette-decide-show {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.5s, transform 0.5s;
+}
+.roulette-tap {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 20px;
+  opacity: 0;
+  transition: none;
+}
+.roulette-tap-show {
+  opacity: 1;
+  transition: opacity 0.5s 0.4s;
+}
+
+/* ── リザルト画面 ── */
+.result-screen {
+  text-align: center;
+  padding: 32px 12px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+.result-trophy  { font-size: 64px; margin-bottom: 8px; }
+.result-headline {
+  font-size: 30px;
+  color: var(--accent);
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+.result-subtitle {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 24px;
+}
+.result-table {
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.result-header,
+.result-row {
+  display: grid;
+  grid-template-columns: 36px 1fr 72px 72px;
+  gap: 4px;
+  padding: 10px 14px;
+  align-items: center;
+  text-align: left;
+}
+.result-header {
+  background: rgba(255,255,255,0.08);
+  font-size: 11px;
+  color: var(--muted);
+}
+.result-row { border-top: 1px solid rgba(255,255,255,0.06); }
+.result-winner-row { background: rgba(232,201,109,0.1); }
+.result-winner-name { color: var(--accent); font-weight: bold; }
+.result-medal  { font-size: 22px; }
+.result-mob    { font-weight: bold; text-align: right; }
+.result-music  { color: var(--muted); font-size: 13px; text-align: right; }
+
 /* Responsive */
 @media (max-width: 480px) {
   :root { --card-w: 108px; --card-h: 150px; }

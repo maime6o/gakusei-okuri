@@ -554,16 +554,7 @@ function renderGame() {
 
   // ── 勝利 ──
   if (gs.phase === 'game_over') {
-    const winner = gs.players.find(p => p.player_id === gs.winner_id);
-    html += `
-      <div style="text-align:center;padding:40px 20px">
-        <div style="font-size:48px;margin-bottom:12px">🎉</div>
-        <div style="font-size:26px;color:var(--accent);margin-bottom:8px">
-          ${esc(winner?.name ?? '?')} の勝利！
-        </div>
-        <button class="btn btn-secondary" style="margin-top:20px"
-                onclick="location.reload()">ロビーへ戻る</button>
-      </div>`;
+    html += renderResultScreen(gs);
     $('main-content').innerHTML = html + '</div></div></div>';
     return;
   }
@@ -936,6 +927,84 @@ function openTaibanModal() {
 
   renderStep1();
   document.body.appendChild(overlay);
+}
+
+function renderResultScreen(gs) {
+  const winner = gs.players.find(p => p.player_id === gs.winner_id);
+  const sorted = [...gs.players].sort((a, b) => b.cumulative_mobilization - a.cumulative_mobilization);
+  const medals = ['🥇', '🥈', '🥉', '🏅'];
+  const rows = sorted.map((p, i) => {
+    const isWin = p.player_id === gs.winner_id;
+    return `
+      <div class="result-row${isWin ? ' result-winner-row' : ''}">
+        <span class="result-medal">${medals[i] || ''}</span>
+        <span class="result-pname${isWin ? ' result-winner-name' : ''}">${esc(p.name)}</span>
+        <span class="result-mob">${p.cumulative_mobilization}</span>
+        <span class="result-music">${p.music_score}</span>
+      </div>`;
+  }).join('');
+  return `
+    <div class="result-screen">
+      <div class="result-trophy">🎉</div>
+      <div class="result-headline">${esc(winner?.name ?? '?')} の勝利！</div>
+      <div class="result-subtitle">ゲーム終了</div>
+      <div class="result-table">
+        <div class="result-header">
+          <span></span><span>プレイヤー</span><span>動員数</span><span>音楽性</span>
+        </div>
+        ${rows}
+      </div>
+      <button class="btn btn-secondary" style="margin-top:24px"
+              onclick="location.reload()">ロビーへ戻る</button>
+    </div>`;
+}
+
+function showStartingPlayerRoulette(gs) {
+  const firstPlayer = gs.players[gs.current_player_idx];
+  const names = gs.players.map(p => p.name);
+
+  const overlay = document.createElement('div');
+  overlay.id = 'starting-roulette';
+  overlay.innerHTML = `
+    <div class="roulette-inner">
+      <div class="roulette-title">先攻決定！</div>
+      <div class="roulette-name" id="roulette-spin-name">…</div>
+      <div class="roulette-decide" id="roulette-decide"></div>
+      <div class="roulette-tap" id="roulette-tap">タップして閉じる</div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const spinEl = overlay.querySelector('#roulette-spin-name');
+  const decideEl = overlay.querySelector('#roulette-decide');
+  const tapEl = overlay.querySelector('#roulette-tap');
+
+  // 高速スピン → 減速 → 先攻プレイヤーで停止
+  const schedule = [];
+  let ni = Math.floor(Math.random() * names.length);
+  for (let i = 0; i < 20; i++) {
+    schedule.push({ name: names[ni++ % names.length], ms: 70 + i * 4 });
+  }
+  [140, 190, 250, 320, 400, 490].forEach(ms => {
+    schedule.push({ name: names[ni++ % names.length], ms });
+  });
+  schedule.push({ name: firstPlayer.name, ms: 650, final: true });
+
+  let t = 500; // 開幕少し待つ
+  for (const s of schedule) {
+    t += s.ms;
+    const snap = s;
+    setTimeout(() => {
+      spinEl.textContent = snap.name;
+      if (snap.final) {
+        spinEl.classList.add('roulette-landed');
+        decideEl.textContent = `🎸 ${snap.name} が先攻！`;
+        decideEl.classList.add('roulette-decide-show');
+        tapEl.classList.add('roulette-tap-show');
+        overlay.onclick = () => overlay.remove();
+        setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, 7000);
+      }
+    }, t);
+  }
 }
 
 function showMyTurnNotification() {
@@ -1637,6 +1706,11 @@ function onStateUpdate(gs) {
 
   if (gs.taiban_result) {
     showTaibanResultPopup(gs.taiban_result);
+  }
+
+  // ゲーム開始時の先攻決定ルーレット（イベントログが1件＝開始直後のみ）
+  if (!prevGs && gs.phase === 'mulligan' && gs.event_log?.length === 1) {
+    showStartingPlayerRoulette(gs);
   }
 
   // 自分のターンになった瞬間を検出して通知
